@@ -1,0 +1,47 @@
+import React from 'react';
+import { Link } from '@inertiajs/react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Search, ShoppingCart } from 'lucide-react';
+import AppLogoIcon from './app-logo-icon';
+
+export default function AppHeader() {
+    return (
+        <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between items-center h-16">
+                    {/* Logo */}
+                    <div className="flex-shrink-0 flex items-center">
+                        <AppLogoIcon className="h-10 fill-current text-white dark:text-black" />
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="flex-1 flex justify-center px-2">
+                        <div className="max-w-lg w-full lg:max-w-xs">
+                            <Label htmlFor="search" className="sr-only">Cari Barang Apa</Label>
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                </div>
+                                <Input
+                                    id="search"
+                                    name="search"
+                                    className="block w-full pl-10 pr-3 py-2 border-transparent rounded-full leading-5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:bg-white dark:focus:bg-gray-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 sm:text-sm transition-all"
+                                    placeholder="Cari Barang Apa"
+                                    type="search"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Keranjang */}
+                    <div className="flex items-center sm:ml-6">
+                        <Link href={route('front.keranjang')} className="ml-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            <ShoppingCart className="h-6 w-6" />
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    );
+}
