@@ -17,18 +17,20 @@ interface Produk {
 
 // Properti halaman, sekarang menerima objek produk
 interface Props {
+    alrLogin: boolean;
     canLogin: boolean;
     canRegister: boolean;
     categoriesList: { id: number; name: string }[];
     produk: Produk | null;
 }
 
-export default function ProdukDetail({ canLogin, canRegister, categoriesList, produk }: Props) {
+export default function ProdukDetail({ alrLogin, canLogin, canRegister, categoriesList, produk }: Props) {
     const [jumlah, setJumlah] = useState<number>(1);
+    const [ukuranDipilih, setUkuranDipilih] = useState<string | null>(null); // State baru untuk ukuran
 
     const handleAddToCart = () => {
         // PERBAIKAN: Periksa apakah pengguna sudah login
-        if (canLogin) {
+        if (alrLogin) {
             alert('Anda harus login untuk menambahkan produk ke keranjang.');
             router.get(route('login')); // Arahkan ke halaman login
             return;
@@ -39,12 +41,19 @@ export default function ProdukDetail({ canLogin, canRegister, categoriesList, pr
             return;
         }
 
+        // PERBAIKAN: Periksa apakah ukuran sudah dipilih
+        if (!ukuranDipilih) {
+            alert('Mohon pilih ukuran produk terlebih dahulu.');
+            return;
+        }
+
         // Kirim request POST ke controller
         router.post(
             '/front/keranjang/add',
             {
                 produkId: produk.id,
                 jumlah: jumlah,
+                ukuran: ukuranDipilih, // Kirim data ukuran yang dipilih
             },
             {
                 onSuccess: () => {
@@ -99,8 +108,24 @@ export default function ProdukDetail({ canLogin, canRegister, categoriesList, pr
                                 <li>
                                     <strong>Stok:</strong> {produk?.stok}
                                 </li>
+                                {/* Bagian Ukuran: Ubah menjadi tombol */}
                                 <li>
-                                    <strong>Ukuran:</strong> {Array.isArray(produk?.ukuran) ? produk.ukuran.join(', ') : 'N/A'}
+                                    <strong>Ukuran:</strong>
+                                    <div className="mt-2 flex space-x-2">
+                                        {Array.isArray(produk?.ukuran) &&
+                                            produk.ukuran.map((ukuran) => (
+                                                <Button
+                                                    key={ukuran}
+                                                    variant="outline"
+                                                    className={`border-gray-300 transition-colors ${
+                                                        ukuran === ukuranDipilih ? 'border-pink-500 bg-pink-50 text-pink-700 hover:bg-pink-100' : ''
+                                                    }`}
+                                                    onClick={() => setUkuranDipilih(ukuran)}
+                                                >
+                                                    {ukuran}
+                                                </Button>
+                                            ))}
+                                    </div>
                                 </li>
                             </ul>
                         </div>

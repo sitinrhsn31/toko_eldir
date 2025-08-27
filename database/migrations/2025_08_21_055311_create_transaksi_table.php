@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('transaksi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('userId')->unique()->constrained('users');
-            $table->foreignId("orderId")->unique()->constrained('order');
-            $table->foreignId("produkId")->unique()->constrained('produk');
-            $table->foreignId("ongkirId")->unique()->constrained('ongkir');
+            $table->foreignId('userId')->constrained('users');
+            $table->foreignId("orderId")->constrained('order');
+            $table->foreignId("produkId")->constrained('produk');
+            $table->foreignId("ongkirId")->constrained('ongkir');
             $table->enum("status", ["belum", "bayar", "tolak"])->default("belum");
             $table->string("code");
             $table->timestamps();

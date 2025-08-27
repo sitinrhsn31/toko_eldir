@@ -22,6 +22,8 @@ class Transaksi extends Model
      */
     protected $fillable = [
         'userId',
+        'orderId',
+        'produkId',
         'ongkirId',
         'status',
         'code',
@@ -48,6 +50,15 @@ class Transaksi extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'userId');
+    }
+
+    /**
+     * Mendefinisikan relasi dengan model Order.
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'orderId');
     }
 
     /**

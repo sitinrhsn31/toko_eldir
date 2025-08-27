@@ -18,13 +18,11 @@ class OrderController extends Controller
     {
         $orders = Order::with(['user', 'cart', 'ongkir'])->paginate(10);
         $usersList = User::all(['id', 'name']);
-        $cartsList = Cart::all(['id', 'jumlah']);
         $ongkirsList = Ongkir::all(['id', 'name']);
 
         return Inertia::render('order/index', [
             'orders' => $orders,
             'usersList' => $usersList,
-            'cartsList' => $cartsList,
             'ongkirsList' => $ongkirsList,
         ]);
     }
@@ -36,7 +34,6 @@ class OrderController extends Controller
     {
         $validatedData = $request->validate([
             'userId' => 'required|exists:users,id',
-            'cartId' => 'required|exists:cart,id',
             'ongkirId' => 'required|exists:ongkir,id',
             'name' => 'required|string|max:255',
             'nohp' => 'required|integer',
@@ -58,7 +55,6 @@ class OrderController extends Controller
     {
         $validatedData = $request->validate([
             'userId' => 'required|exists:users,id',
-            'cartId' => 'required|exists:cart,id',
             'ongkirId' => 'required|exists:ongkir,id',
             'name' => 'required|string|max:255',
             'nohp' => 'required|integer',

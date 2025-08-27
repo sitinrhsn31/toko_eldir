@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [FrontController::class, 'welcome'])->name('home');
 
+Route::get('/admin/order/report-monthly', [FrontController::class, 'printMonthlyReport'])->name('admin.order.report.monthly');
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin.php';

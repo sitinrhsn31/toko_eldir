@@ -21,7 +21,7 @@ export default function FrontLayout({ children }: PropsWithChildren) {
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             <div className="fixed top-0 left-0 z-20 w-full">
-                <AppHeader />
+                <AppHeader auth={auth} />
                 <AppNavbar canLogin={canLogin} canRegister={canRegister} categoriesList={categoriesList} auth={auth} />
             </div>
 

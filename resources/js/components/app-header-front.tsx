@@ -5,7 +5,18 @@ import { Label } from '@/components/ui/label';
 import { Search, ShoppingCart } from 'lucide-react';
 import AppLogoIcon from './app-logo-icon';
 
-export default function AppHeader() {
+interface Props {
+    auth: {
+        user: {
+            id: number;
+            name: string;
+            email: string;
+            role: string; // Tambahkan role jika diperlukan
+        } | null;
+    };
+}
+
+export default function AppHeader({ auth }: Props) {
     return (
         <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,9 +47,12 @@ export default function AppHeader() {
 
                     {/* Keranjang */}
                     <div className="flex items-center sm:ml-6">
-                        <Link href={route('front.keranjang')} className="ml-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-                            <ShoppingCart className="h-6 w-6" />
-                        </Link>
+                        {auth.user ? (
+                            <Link href={route('front.keranjang')} className="ml-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                                <ShoppingCart className="h-6 w-6" />
+                            </Link>
+                        ) : null }
+                        
                     </div>
                 </div>
             </div>

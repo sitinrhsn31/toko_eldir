@@ -66,6 +66,10 @@ export default function MyNavbar({ auth, canLogin, canRegister }: Props) {
                         >
                             Tentang Kami
                         </Link>
+                        {auth.user ? (
+                            <Link href={route('front.pesanan')}>Pesanan Saya</Link>
+                        ) : null }
+
                     </div>
 
                     {/* Autentikasi Kanan */}
@@ -84,10 +88,6 @@ export default function MyNavbar({ auth, canLogin, canRegister }: Props) {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <Link href={route('profile.edit')}>Pengaturan Profil</Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <button>Lacak Pesanan</button>
-                                        {/* <Link href={route('transaksi')}>Lacak Pesanan</Link> */}
                                     </DropdownMenuItem>
                                     {auth.user.role === 'admin' && (
                                         <DropdownMenuItem asChild>

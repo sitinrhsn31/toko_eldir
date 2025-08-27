@@ -13,10 +13,16 @@ Route::group(['prefix' => 'front', 'as' => 'front.'], function () {
     Route::get('/tentang-kami', [FrontController::class, 'tentangkami'])->name('tentang-kami');
 
     Route::get('/keranjang', [FrontController::class, 'cart'])->name('keranjang');
+    Route::put('/keranjang/update/{cart}', [FrontController::class, 'updateJumlahCart'])->name('cart.update');
+    Route::delete('/keranjang/destroy/{cart}', [FrontController::class, 'destroyCart'])->name('cart.destroy');
 
     Route::post('/keranjang/add', [FrontController::class, 'addToCart'])->name('keranjang.store');
 
     Route::get('/checkout', [FrontController::class, 'checkout'])->name('checkout');
 
+    Route::post('/checkout/process', [FrontController::class, 'checkoutProcess'])->name('checkout.process');
+
     Route::get('/transaksi', [FrontController::class, 'transaksi'])->name('transaksi');
+
+    Route::get('/pesanan', [FrontController::class, 'pesanan'])->name('pesanan');
 });

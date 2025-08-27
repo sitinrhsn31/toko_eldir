@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('order', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('userId')->unique()->constrained('users');
-            $table->foreignId("produkId")->unique()->constrained('produk');
-            $table->foreignId("cartId")->unique()->constrained('cart');
-            $table->foreignId("ongkirId")->unique()->constrained('ongkir');
+            $table->foreignId('userId')->constrained('users');
+            $table->foreignId("ongkirId")->constrained('ongkir');
             $table->string('name');
-            $table->integer('nohp');
+            $table->string('nohp');
             $table->text("alamat");
             $table->float("totalHarga");
             $table->enum("status", ["belum", "proses", "kirim", "selesai"])->default("belum");

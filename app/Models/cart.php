@@ -25,6 +25,7 @@ class Cart extends Model
         'produkId',
         'userId',
         'jumlah',
+        'ukuran',
     ];
 
     /**

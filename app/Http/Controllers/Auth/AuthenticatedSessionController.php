@@ -38,7 +38,6 @@ class AuthenticatedSessionController extends Controller
 
         // Lakukan pengalihan berdasarkan peran pengguna
         if ($user->role === 'admin') {
-            dd($user->role);
             return redirect()->intended(route('dashboard.index'));
         }
 

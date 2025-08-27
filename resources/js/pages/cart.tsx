@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FrontLayout from '@/layouts/front-layout';
-import { Head, Link } from '@inertiajs/react';
-import { ShoppingCart, Trash2 } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { useState } from 'react';
 
 // Tipe data untuk produk
@@ -13,53 +13,57 @@ interface Produk {
     foto: string;
 }
 
-// Tipe data untuk item keranjang
+// PERBAIKAN: Tambahkan 'ukuran' ke dalam tipe CartItem
 interface CartItem {
     id: number;
     produk: Produk;
     jumlah: number;
-    totalHarga: number;
+    ukuran: string; // Tambahkan properti ukuran di sini
 }
 
-export default function CartPage({
+export default function cart({
     canLogin,
     canRegister,
     categoriesList,
+    cartItems: initialCartItems,
+    totalHarga,
 }: {
     canLogin: boolean;
     canRegister: boolean;
     categoriesList: { id: number; name: string }[];
+    cartItems: CartItem[];
+    totalHarga: number;
 }) {
-    const [cartItems, setCartItems] = useState<CartItem[]>([
-        {
-            id: 1,
-            produk: {
-                id: 1,
-                nama: 'Hoodie Bergaya',
-                harga: 150000,
-                foto: 'https://placehold.co/100x100/E879F9/111827?text=Hoodie',
-            },
-            jumlah: 1,
-            totalHarga: 150000,
-        },
-        {
-            id: 2,
-            produk: {
-                id: 2,
-                nama: 'Kaos Santai',
-                harga: 50000,
-                foto: 'https://placehold.co/100x100/38A169/111827?text=Kaos',
-            },
-            jumlah: 2,
-            totalHarga: 100000,
-        },
-    ]);
+    const [cartItems, setCartItems] = useState<CartItem[]>(initialCartItems);
 
-    const handleRemoveItem = (itemId: number) => {
-        setCartItems(cartItems.filter((item) => item.id !== itemId));
+    const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
+        if (newQuantity < 1) {
+            newQuantity = 1;
+        }
+
+        const updatedCartItems = cartItems.map(item =>
+            item.id === itemId ? { ...item, jumlah: newQuantity } : item
+        );
+        setCartItems(updatedCartItems);
+
+        router.put(`/front/keranjang/update/${itemId}`, {
+            cartId: itemId,
+            jumlah: newQuantity,
+        }, {
+            preserveScroll: true,
+        });
     };
 
-    const totalBayar = cartItems.reduce((sum, item) => sum + item.totalHarga, 0);
+    const handleRemoveItem = (itemId: number) => {
+        // Konfirmasi sebelum menghapus (gunakan modal kustom, jangan alert)
+        if (confirm('Apakah Anda yakin ingin menghapus item ini dari keranjang?')) {
+             router.delete(`/front/keranjang/destroy/${itemId}`, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const totalBayar = cartItems.reduce((sum, item) => sum + item.produk.harga * item.jumlah, 0);
 
     return (
         <FrontLayout>
@@ -75,6 +79,7 @@ export default function CartPage({
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead colSpan={2}>Produk</TableHead>
+                                        <TableHead>Ukuran</TableHead> {/* Tambahkan header ukuran */}
                                         <TableHead>Harga</TableHead>
                                         <TableHead>Jumlah</TableHead>
                                         <TableHead>Total</TableHead>
@@ -85,12 +90,33 @@ export default function CartPage({
                                     {cartItems.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell>
-                                                <img src={item.produk.foto} alt={item.produk.nama} className="h-16 w-16 rounded object-cover" />
+                                                <img
+                                                    src={`/storage/${item.produk.foto}`}
+                                                    alt={item.produk.nama}
+                                                    className="h-16 w-16 rounded object-cover"
+                                                />
                                             </TableCell>
                                             <TableCell className="font-medium">{item.produk.nama}</TableCell>
+                                            <TableCell>{item.ukuran}</TableCell> {/* Tampilkan ukuran di sini */}
                                             <TableCell>Rp {item.produk.harga.toLocaleString('id-ID')}</TableCell>
-                                            <TableCell>{item.jumlah}</TableCell>
-                                            <TableCell>Rp {item.totalHarga.toLocaleString('id-ID')}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Button variant="outline" size="icon" onClick={() => handleUpdateQuantity(item.id, item.jumlah - 1)}>
+                                                        <Minus className="h-4 w-4" />
+                                                    </Button>
+                                                    <input
+                                                        type="number"
+                                                        min="1"
+                                                        value={item.jumlah}
+                                                        onChange={(e) => handleUpdateQuantity(item.id, parseInt(e.target.value))}
+                                                        className="w-12 text-center rounded-md border border-gray-300"
+                                                    />
+                                                    <Button variant="outline" size="icon" onClick={() => handleUpdateQuantity(item.id, item.jumlah + 1)}>
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>Rp {(item.produk.harga * item.jumlah).toLocaleString('id-ID')}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="destructive" size="icon" onClick={() => handleRemoveItem(item.id)}>
                                                     <Trash2 className="h-4 w-4" />

@@ -38,6 +38,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { FileDown } from 'lucide-react';
 
 // Tipe data untuk relasi
 interface User {
@@ -66,7 +67,6 @@ interface Order {
     totalHarga: number;
     status: string;
     user: User;
-    cart: Cart;
     ongkir: Ongkir;
 }
 
@@ -117,6 +117,10 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
     const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+
+    // State untuk modal laporan bulanan
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportDate, setReportDate] = useState('');
 
     const form = useForm({
         userId: 0,
@@ -176,6 +180,19 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
         }
     };
 
+    const handlePrintReport = () => {
+        // Membuka modal untuk memilih bulan
+        setIsReportModalOpen(true);
+    };
+
+    const generatePdf = () => {
+        // Mengarahkan ke rute backend dengan parameter bulan dan tahun
+        const [year, month] = reportDate.split('-');
+        const url = route('admin.order.report.monthly', { month, year });
+        window.open(url, '_blank');
+        setIsReportModalOpen(false);
+    };
+
     const hasOrders = orders && orders.data && orders.data.length > 0;
     const statusOptions = ['belum', 'proses', 'kirim', 'selesai'];
 
@@ -185,6 +202,10 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold">Daftar Pesanan</h1>
+                    <Button onClick={handlePrintReport}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Cetak Laporan Bulanan
+                    </Button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -193,7 +214,6 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                             <TableRow>
                                 <TableHead className="w-[80px]">No.</TableHead>
                                 <TableHead>Pengguna</TableHead>
-                                <TableHead>Keranjang</TableHead>
                                 <TableHead>Ongkir</TableHead>
                                 <TableHead>Nama</TableHead>
                                 <TableHead>No HP</TableHead>
@@ -211,7 +231,6 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                                             {orders.meta ? (orders.meta.current_page - 1) * orders.meta.per_page + index + 1 : index + 1}
                                         </TableCell>
                                         <TableCell>{order.user ? order.user.name : 'Tidak ada'}</TableCell>
-                                        <TableCell>{order.cart ? order.cart.id : 'Tidak ada'}</TableCell>
                                         <TableCell>{order.ongkir ? order.ongkir.name : 'Tidak ada'}</TableCell>
                                         <TableCell>{order.name}</TableCell>
                                         <TableCell>{order.nohp}</TableCell>
@@ -272,26 +291,6 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                                         {usersList.map((user) => (
                                             <SelectItem key={user.id} value={String(user.id)}>
                                                 {user.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="cartId" className="text-right">
-                                    Keranjang
-                                </Label>
-                                <Select
-                                    value={form.data.cartId ? String(form.data.cartId) : ''}
-                                    onValueChange={(value) => form.setData('cartId', parseInt(value))}
-                                >
-                                    <SelectTrigger className="col-span-3">
-                                        <SelectValue placeholder="Pilih Keranjang" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {cartsList.map((cart) => (
-                                            <SelectItem key={cart.id} value={String(cart.id)}>
-                                                {cart.id}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -409,6 +408,39 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Report Monthly Dialog */}
+            <Dialog open={isReportModalOpen} onOpenChange={setIsReportModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Cetak Laporan Bulanan</DialogTitle>
+                        <DialogDescription>
+                            Pilih bulan dan tahun untuk laporan pesanan yang sudah selesai.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="monthYear" className="text-right">
+                                Bulan & Tahun
+                            </Label>
+                            <Input
+                                id="monthYear"
+                                type="month"
+                                value={reportDate}
+                                onChange={(e) => setReportDate(e.target.value)}
+                                className="col-span-3"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReportModalOpen(false)}>Batal</Button>
+                        <Button onClick={generatePdf} disabled={!reportDate}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            Cetak
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }
