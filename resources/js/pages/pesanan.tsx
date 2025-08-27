@@ -1,8 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import FrontLayout from '@/layouts/front-layout';
 import { Head, usePage } from '@inertiajs/react';
-import React from 'react';
 
 // Tipe data untuk order
 interface Order {
@@ -76,7 +74,7 @@ export default function PesananPage() {
                         </Table>
                     </div>
                 ) : (
-                    <div className="text-center text-gray-500 dark:text-gray-400">
+                    <div className="py-20 text-center text-gray-500 dark:text-gray-400">
                         <p className="text-lg">Anda belum memiliki pesanan.</p>
                     </div>
                 )}

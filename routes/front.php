@@ -25,4 +25,7 @@ Route::group(['prefix' => 'front', 'as' => 'front.'], function () {
     Route::get('/transaksi', [FrontController::class, 'transaksi'])->name('transaksi');
 
     Route::get('/pesanan', [FrontController::class, 'pesanan'])->name('pesanan');
+
+    // Tambahkan route ini di luar grup 'front' jika perlu, agar bisa diakses oleh Midtrans
+    Route::post('/midtrans-callback', [FrontController::class, 'midtransCallback'])->name('midtrans.callback');
 });

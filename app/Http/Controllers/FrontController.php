@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Midtrans\Config;
+use Midtrans\Notification;
 use Midtrans\Snap;
 use Dompdf\Dompdf;
 
@@ -39,7 +40,7 @@ class FrontController extends Controller
     public function produk(Request $request)
     {
         $alrLogin = !Auth::check();
-        
+
         // Mengambil parameter categoryId dari URL
         $categoryId = $request->query('categoryId');
 
@@ -149,8 +150,8 @@ class FrontController extends Controller
         ]);
 
         $cartItem = Cart::where('id', $request->cartId)
-                        ->where('userId', Auth::id())
-                        ->first();
+            ->where('userId', Auth::id())
+            ->first();
 
         if (!$cartItem) {
             return redirect()->back(); // Arahkan kembali jika item tidak ditemukan
@@ -179,7 +180,7 @@ class FrontController extends Controller
 
         // Mengambil ulang data keranjang dan total harga setelah penghapusan
         $cart = Cart::where('userId', Auth::id())->with('produk')->get();
-        
+
         $alrLogin = !Auth::check();
 
         // Mendapatkan ID pengguna yang sedang login
@@ -252,7 +253,7 @@ class FrontController extends Controller
             // Siapkan detail transaksi untuk Midtrans
             $midtransParams = [
                 'transaction_details' => [
-                    'order_id' => $order->id,
+                    'order_id' => 'ORDER-' . $order->id,
                     'gross_amount' => $request->total_bayar,
                 ],
                 'customer_details' => [
@@ -260,7 +261,7 @@ class FrontController extends Controller
                     'email' => $user->email,
                     'phone' => $request->shipping_info['nohp'],
                 ],
-                'item_details' => array_map(function($item) {
+                'item_details' => array_map(function ($item) {
                     return [
                         'id' => $item['id_produk'],
                         'price' => $item['harga'],
@@ -275,11 +276,11 @@ class FrontController extends Controller
                 'id' => 'shipping-' . $order->ongkirId,
                 'price' => $request->ongkir['biaya'],
                 'quantity' => 1,
-                'name' => 'Biaya Pengiriman',
+                'name' => 'Biaya Pengiriman ' . $request->ongkir['jasa'],
             ];
 
             $snapToken = Snap::getSnapToken($midtransParams);
-            
+
             // 3. Buat entri transaksi baru
             Transaksi::create([
                 'userId' => $user->id,
@@ -289,31 +290,97 @@ class FrontController extends Controller
                 'status' => 'belum',
                 'code' => $snapToken,
             ]);
-            
+
             // 4. Hapus item dari keranjang
             Cart::where('userId', $user->id)->delete();
-            
+
             // Commit transaksi database
             DB::commit();
-            
-            // 5. Kirim snap token kembali ke front-end
-            return Inertia::location(route('front.transaksi.show', ['order_id' => $order->id]));
 
+            // 5. Kirim snap token kembali ke front-end
+            // return Inertia::location(route('front.transaksi', ['order_id' => $order->id]));
+            return response()->json([
+                'snapToken' => $snapToken,
+                'orderId' => $order->id, // Kirim order ID juga jika diperlukan di front-end
+            ]);
         } catch (\Exception $e) {
             // Rollback transaksi jika ada kesalahan
             DB::rollBack();
 
+            dd($e);
             // Tangani kesalahan Midtrans dengan mengembalikan respons Inertia
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function midtransCallback(Request $request)
+    {
+        // 1. Konfigurasi Midtrans
+        Config::$isProduction = config('services.midtrans.isProduction');
+        Config::$serverKey = config('services.midtrans.serverKey');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+
+        // 2. Buat instance notifikasi Midtrans
+        try {
+            $notif = new Notification();
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
+
+        // 3. Ambil data notifikasi
+        $transaction = $notif->transaction_status;
+        $orderId = $notif->order_id;
+        $fraud = $notif->fraud_status;
+
+        // 4. Periksa apakah order ID valid
+        // Hapus prefix 'ORDER-' saat mencari order
+        $originalOrderId = substr($orderId, strlen('ORDER-'));
+        $order = Order::where('id', $originalOrderId)->first();
+
+        if (!$order) {
+            return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        // 5. Logika untuk mengubah status transaksi
+        if ($transaction == 'capture') {
+            // Untuk pembayaran dengan kartu kredit
+            if ($fraud == 'challenge') {
+                // Status penipuan (fraud), ubah status order menjadi 'challenge'
+                $order->status = 'challenge';
+            } else if ($fraud == 'accept') {
+                // Pembayaran berhasil, ubah status order menjadi 'success'
+                $order->status = 'paid';
+            }
+        } else if ($transaction == 'settlement') {
+            // Pembayaran berhasil (selain kartu kredit), ubah status order menjadi 'paid'
+            $order->status = 'paid';
+        } else if ($transaction == 'pending') {
+            // Transaksi sedang menunggu pembayaran
+            $order->status = 'pending';
+        } else if ($transaction == 'deny') {
+            // Transaksi ditolak
+            $order->status = 'denied';
+        } else if ($transaction == 'expire') {
+            // Transaksi kadaluarsa
+            $order->status = 'expired';
+        } else if ($transaction == 'cancel') {
+            // Transaksi dibatalkan
+            $order->status = 'cancelled';
+        }
+
+        // 6. Simpan perubahan status
+        $order->save();
+
+        return response()->json(['message' => 'Status updated successfully']);
     }
 
     public function transaksi()
     {
         // Mendapatkan semua transaksi yang dimiliki oleh pengguna yang sedang login
         $transaksis = Transaksi::where('userId', Auth::id())
-                                ->with(['order', 'ongkir'])
-                                ->get();
+            ->with(['order', 'ongkir'])
+            ->get();
 
         return Inertia::render('transaksi', [
             'alrLogin' => !Auth::check(),
@@ -327,9 +394,9 @@ class FrontController extends Controller
     {
         // Mendapatkan semua pesanan yang dimiliki oleh pengguna yang sedang login
         $orders = Order::where('userId', Auth::id())
-                        ->with('ongkir') // Jika Anda ingin menampilkan nama jasa kirim
-                        ->latest()
-                        ->get();
+            ->with('ongkir') // Jika Anda ingin menampilkan nama jasa kirim
+            ->latest()
+            ->get();
 
         return Inertia::render('pesanan', [
             'alrLogin' => !Auth::check(),
@@ -346,25 +413,25 @@ class FrontController extends Controller
             'month' => 'required|integer|between:1,12',
             'year' => 'required|integer|digits:4',
         ]);
-        
+
         $month = $request->input('month');
         $year = $request->input('year');
-        
+
         // Mendapatkan pesanan yang sudah selesai dalam periode yang dipilih
         $orders = Order::where('status', 'selesai')
-                        ->whereYear('created_at', $year)
-                        ->whereMonth('created_at', $month)
-                        ->with(['user', 'ongkir'])
-                        ->get();
-        
+            ->whereYear('created_at', $year)
+            ->whereMonth('created_at', $month)
+            ->with(['user', 'ongkir'])
+            ->get();
+
         $html = view('pdf.report', compact('orders', 'month', 'year'))->render();
-        
+
         $dompdf = new Dompdf();
         $dompdf->loadHtml($html);
-        
+
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
-        
+
         $dompdf->stream('Laporan_Pesanan_Selesai_' . $year . '-' . $month . '.pdf', ['Attachment' => false]);
     }
 }

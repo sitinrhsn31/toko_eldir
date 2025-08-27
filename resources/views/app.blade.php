@@ -45,21 +45,21 @@
             @inertiaHead
 
             <script type="text/javascript" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.clientKey') }}"></script>
-            <script type="text/javascript">
-        document.getElementById('pay-button').onclick = function() {
-            Snap.pay('{{ $snapToken }}', {
-                onSuccess: function(result) {
-                    // Handle successful payment
-                },
-                onPending: function(result) {
-                    // Handle pending payment
-                },
-                onError: function(result) {
-                    // Handle failed payment
-                }
-            });
-        };
-    </script>
+            {{-- <script type="text/javascript">
+                document.getElementById('pay-button').onclick = function() {
+                    Snap.pay('{{ $snapToken }}', {
+                        onSuccess: function(result) {
+                            // Handle successful payment
+                        },
+                        onPending: function(result) {
+                            // Handle pending payment
+                        },
+                        onError: function(result) {
+                            // Handle failed payment
+                        }
+                    });
+                };
+            </script> --}}
         </head>
         <body class="font-sans antialiased">
             @inertia
