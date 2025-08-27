@@ -1,16 +1,9 @@
-import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
-import FrontLayout from '@/layouts/front-layout';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import FrontLayout from '@/layouts/front-layout';
+import { Head, Link } from '@inertiajs/react';
 import { ShoppingCart, Trash2 } from 'lucide-react';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+import { useState } from 'react';
 
 // Tipe data untuk produk
 interface Produk {
@@ -28,7 +21,15 @@ interface CartItem {
     totalHarga: number;
 }
 
-export default function CartPage({ canLogin, canRegister }: { canLogin: boolean, canRegister: boolean }) {
+export default function CartPage({
+    canLogin,
+    canRegister,
+    categoriesList,
+}: {
+    canLogin: boolean;
+    canRegister: boolean;
+    categoriesList: { id: number; name: string }[];
+}) {
     const [cartItems, setCartItems] = useState<CartItem[]>([
         {
             id: 1,
@@ -55,19 +56,19 @@ export default function CartPage({ canLogin, canRegister }: { canLogin: boolean,
     ]);
 
     const handleRemoveItem = (itemId: number) => {
-        setCartItems(cartItems.filter(item => item.id !== itemId));
+        setCartItems(cartItems.filter((item) => item.id !== itemId));
     };
 
     const totalBayar = cartItems.reduce((sum, item) => sum + item.totalHarga, 0);
 
     return (
-        <FrontLayout canLogin={canLogin} canRegister={canRegister}>
+        <FrontLayout>
             <Head title="Keranjang" />
             <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Keranjang Anda</h1>
+                <h1 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">Keranjang Anda</h1>
 
                 {cartItems.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
                         {/* Kolom Kiri: Daftar Produk */}
                         <div className="md:col-span-2">
                             <Table>
@@ -81,10 +82,10 @@ export default function CartPage({ canLogin, canRegister }: { canLogin: boolean,
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {cartItems.map(item => (
+                                    {cartItems.map((item) => (
                                         <TableRow key={item.id}>
                                             <TableCell>
-                                                <img src={item.produk.foto} alt={item.produk.nama} className="w-16 h-16 object-cover rounded" />
+                                                <img src={item.produk.foto} alt={item.produk.nama} className="h-16 w-16 rounded object-cover" />
                                             </TableCell>
                                             <TableCell className="font-medium">{item.produk.nama}</TableCell>
                                             <TableCell>Rp {item.produk.harga.toLocaleString('id-ID')}</TableCell>
@@ -102,14 +103,14 @@ export default function CartPage({ canLogin, canRegister }: { canLogin: boolean,
                         </div>
 
                         {/* Kolom Kanan: Ringkasan Belanja */}
-                        <div className="md:col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 h-fit">
-                            <h2 className="text-2xl font-bold mb-4">Ringkasan Belanja</h2>
-                            <div className="flex justify-between font-medium text-lg">
+                        <div className="h-fit rounded-lg bg-white p-6 shadow-md md:col-span-1 dark:bg-gray-800">
+                            <h2 className="mb-4 text-2xl font-bold">Ringkasan Belanja</h2>
+                            <div className="flex justify-between text-lg font-medium">
                                 <span>Total</span>
                                 <span>Rp {totalBayar.toLocaleString('id-ID')}</span>
                             </div>
                             <Link href={route('front.checkout')}>
-                                <Button className="w-full mt-6">
+                                <Button className="mt-6 w-full">
                                     Checkout
                                     <ShoppingCart className="ml-2" />
                                 </Button>
@@ -117,9 +118,7 @@ export default function CartPage({ canLogin, canRegister }: { canLogin: boolean,
                         </div>
                     </div>
                 ) : (
-                    <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-                        Keranjang Anda kosong.
-                    </div>
+                    <div className="py-16 text-center text-gray-500 dark:text-gray-400">Keranjang Anda kosong.</div>
                 )}
             </div>
         </FrontLayout>

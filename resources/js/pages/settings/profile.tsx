@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import FrontLayout from '@/layouts/front-layout'; // Impor FrontLayout
 import SettingsLayout from '@/layouts/settings/layout';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -21,8 +22,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: boolean; status?: string }) {
     const { auth } = usePage<SharedData>().props;
 
+    // Periksa peran pengguna untuk menentukan layout
+    const isUserRole = auth.user?.role === 'user';
+
+    // Pilih layout yang akan digunakan
+    const LayoutComponent = isUserRole ? FrontLayout : AppLayout;
+
     return (
-        <AppLayout breadcrumbs={breadcrumbs}>
+        <LayoutComponent {...(isUserRole ? {} : { breadcrumbs: breadcrumbs })}>
             <Head title="Profile settings" />
 
             <SettingsLayout>
@@ -114,6 +121,6 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
 
                 <DeleteUser />
             </SettingsLayout>
-        </AppLayout>
+        </LayoutComponent>
     );
 }

@@ -19,7 +19,7 @@ return new class extends Migration
             $table->float("harga");
             $table->integer("stok");
             $table->json("ukuran");
-            $table->string("foto"); // Mengubah tipe kolom menjadi string
+            $table->string("foto");
             $table->timestamps();
         });
     }

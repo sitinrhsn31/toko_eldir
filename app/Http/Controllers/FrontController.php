@@ -18,38 +18,86 @@ class FrontController extends Controller
         $produksTerbaru = Produk::latest()->take(4)->get();
 
         return Inertia::render('welcome', [
+            'user' => Auth::user(),
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'produksTerbaru' => $produksTerbaru,
         ]);
     }
 
-    public function produk()
+    public function produk(Request $request)
     {
-        $semuaProduk = Produk::all();
+        // Mengambil parameter categoryId dari URL
+        $categoryId = $request->query('categoryId');
+
+        // Inisialisasi query builder
+        $query = Produk::query();
+
+        // Jika parameter categoryId ada, tambahkan filter ke query
+        if ($categoryId) {
+            $query->where('categoryId', $categoryId);
+        }
+
+        // Ambil data produk dengan paginasi (10 data per halaman)
+        $produks = $query->paginate(10);
+
+        // Ambil semua kategori untuk Select
+        $categoriesList = Category::all();
+
         return Inertia::render('produk', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
-            'semuaProduk' => $semuaProduk,
+            'produks' => $produks,
+            'categoriesList' => $categoriesList, // Kirim categoriesList ke view
         ]);
     }
 
     public function produkdetail(Produk $produk)
     {
-        return Inertia::render('ProdukDetail', [
+        return Inertia::render('produkdetail', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
-            'produk' => $produk,
+            'produk' => $produk->load('category'), // Gunakan load() untuk memuat relasi
         ]);
+    }
+
+    // Metode baru untuk menyimpan data ke keranjang
+    public function addToCart(Request $request)
+    {
+        // Validasi input
+        $request->validate([
+            'produkId' => 'required|exists:produk,id',
+            'jumlah' => 'required|integer|min:1',
+        ]);
+
+        // Cek apakah produk sudah ada di keranjang user
+        $cartItem = Cart::where('userId', Auth::id())
+            ->where('produkId', $request->produkId)
+            ->first();
+
+        if ($cartItem) {
+            // Jika sudah ada, update jumlahnya
+            $cartItem->jumlah += $request->jumlah;
+            $cartItem->save();
+        } else {
+            // Jika belum ada, buat entri baru
+            Cart::create([
+                'produkId' => $request->produkId,
+                'userId' => Auth::id(),
+                'jumlah' => $request->jumlah,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Produk berhasil ditambahkan ke keranjang!');
     }
 
     public function kategori()
     {
-        $category = Category::all();
+        $categories = Category::all();
         return Inertia::render('kategori', [
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
-            'kategori' => $category,
+            'categories' => $categories, // Ubah nama variabel menjadi `categories` agar lebih jelas
         ]);
     }
 

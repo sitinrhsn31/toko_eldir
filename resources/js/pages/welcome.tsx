@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
-import FrontLayout from '@/layouts/front-layout';
 import { Button } from '@/components/ui/button';
+import FrontLayout from '@/layouts/front-layout';
+import { Head, Link } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
 
 // Tipe data untuk produk
 interface Produk {
@@ -20,28 +20,30 @@ interface Props {
     canLogin: boolean;
     canRegister: boolean;
     produksTerbaru: Produk[];
-    allProduk: Produk[];
+    categoriesList: { id: number; name: string }[];
+    auth: { user: any | null };
+    user: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
 }
 
 // Komponen Card Produk
 const ProductCard: React.FC<{ produk: Produk }> = ({ produk }) => {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-            {produk.foto && (
-                <img
-                    src={`/storage/${produk.foto}`}
-                    alt={produk.nama}
-                    className="w-full h-48 object-cover"
-                />
-            )}
+        <div className="overflow-hidden rounded-lg bg-white shadow-md transition-shadow duration-300 hover:shadow-xl dark:bg-gray-800">
+            {produk.foto && <img src={`/storage/${produk.foto}`} alt={produk.nama} className="h-48 w-full object-cover" />}
             <div className="p-4">
                 <h3 className="text-lg font-semibold">{produk.nama}</h3>
-                <p className="text-gray-500 mt-1">Rp {produk.harga.toLocaleString('id-ID')}</p>
-                <div className="flex justify-between items-center mt-2 text-sm text-gray-400">
+                <p className="mt-1 text-gray-500">Rp {produk.harga.toLocaleString('id-ID')}</p>
+                <div className="mt-2 flex items-center justify-between text-sm text-gray-400">
                     <span>Stok: {produk.stok}</span>
                     <span>Ukuran: {produk.ukuran.join(', ')}</span>
                 </div>
-                <Button className="w-full mt-4">Lihat Detail</Button>
+                <Link href={route('front.produk.show', produk.id)}>
+                    <Button className="mt-4 w-full">Lihat Detail</Button>
+                </Link>
             </div>
         </div>
     );
@@ -88,26 +90,22 @@ const HeroSection: React.FC = () => {
 
     return (
         <div className="relative">
-            <img
-                src={slides[currentSlide].image}
-                alt={slides[currentSlide].title}
-                className="w-full rounded-xl object-cover"
-            />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-white p-4">
-                <h1 className="text-4xl sm:text-6xl font-bold">{slides[currentSlide].title}</h1>
+            <img src={slides[currentSlide].image} alt={slides[currentSlide].title} className="w-full rounded-xl object-cover" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-4 text-center text-white">
+                <h1 className="text-4xl font-bold sm:text-6xl">{slides[currentSlide].title}</h1>
                 <p className="mt-4 text-lg sm:text-xl">{slides[currentSlide].subtitle}</p>
             </div>
 
             {/* Navigasi Carousel */}
             <button
                 onClick={goToPrevious}
-                className="absolute top-1/2 left-4 transform -translate-y-1/2 text-white bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-75 transition-colors"
+                className="bg-opacity-50 hover:bg-opacity-75 absolute top-1/2 left-4 -translate-y-1/2 transform rounded-full bg-black p-2 text-white transition-colors"
             >
                 <ChevronLeft className="h-6 w-6" />
             </button>
             <button
                 onClick={goToNext}
-                className="absolute top-1/2 right-4 transform -translate-y-1/2 text-white bg-black bg-opacity-50 p-2 rounded-full hover:bg-opacity-75 transition-colors"
+                className="bg-opacity-50 hover:bg-opacity-75 absolute top-1/2 right-4 -translate-y-1/2 transform rounded-full bg-black p-2 text-white transition-colors"
             >
                 <ChevronRight className="h-6 w-6" />
             </button>
@@ -115,9 +113,9 @@ const HeroSection: React.FC = () => {
     );
 };
 
-export default function Welcome({ canLogin, canRegister, produksTerbaru, allProduk }: Props) {
+export default function Welcome({ canLogin, canRegister, produksTerbaru, categoriesList, auth, user }: Props) {
     return (
-        <FrontLayout canLogin={canLogin} canRegister={canRegister}>
+        <FrontLayout>
             <Head title="Welcome" />
             <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
                 {/* Hero Section */}
@@ -125,10 +123,8 @@ export default function Welcome({ canLogin, canRegister, produksTerbaru, allProd
 
                 {/* Produk Terbaru */}
                 <div className="mt-16">
-                    <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-                        Produk Terbaru Kami
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                    <h2 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">Produk Terbaru Kami</h2>
+                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
                         {produksTerbaru.map((produk) => (
                             <ProductCard key={produk.id} produk={produk} />
                         ))}

@@ -1,16 +1,3 @@
-import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,24 +8,17 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import React, { useEffect, useState } from 'react';
 
 // Tipe data untuk kategori
 interface Category {
@@ -98,6 +78,40 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+// Helper function untuk format angka menjadi Rupiah
+const formatRupiah = (angka: number) => {
+    // Menangani kasus jika angka adalah 0
+    if (angka === 0) {
+        return 'Rp 0';
+    }
+
+    const numberString = String(angka);
+    // Jika tidak ada angka, kembalikan 'Rp' agar placeholder terlihat
+    if (!numberString) {
+        return 'Rp';
+    }
+
+    const cleanedNumber = numberString.replace(/[^,\d]/g, '');
+    const split = cleanedNumber.split(',');
+    const sisa = split[0].length % 3;
+    let rupiah = split[0].substr(0, sisa);
+    const ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+    if (ribuan) {
+        const separator = sisa ? '.' : '';
+        rupiah += separator + ribuan.join('.');
+    }
+
+    rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+    return `Rp ${rupiah}`;
+};
+
+// Helper function untuk menghilangkan format Rupiah
+const unformatRupiah = (formattedValue: string): number => {
+    const numericValue = parseInt(formattedValue.replace(/[^0-9]/g, ''), 10);
+    return isNaN(numericValue) ? 0 : numericValue;
+};
+
 export default function Index({ produks, categoriesList }: Props) {
     // State untuk form tambah/edit
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -113,6 +127,16 @@ export default function Index({ produks, categoriesList }: Props) {
     });
     const [fotoFile, setFotoFile] = useState<File | null>(null);
     const [currentProdukId, setCurrentProdukId] = useState<number | null>(null);
+
+    // State tambahan untuk input harga yang diformat
+    const [hargaFormatted, setHargaFormatted] = useState('');
+
+    // Menggunakan useEffect untuk sinkronisasi hargaFormatted dengan formData.harga
+    useEffect(() => {
+        if (isFormOpen) {
+            setHargaFormatted(formatRupiah(formData.harga));
+        }
+    }, [isFormOpen, formData.harga]);
 
     // State untuk konfirmasi hapus
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -151,12 +175,21 @@ export default function Index({ produks, categoriesList }: Props) {
         setIsFormOpen(true);
     };
 
+    // Handler untuk perubahan input harga
+    const handleHargaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = e.target.value;
+        const numericValue = unformatRupiah(inputValue);
+
+        setHargaFormatted(formatRupiah(numericValue));
+        setFormData({ ...formData, harga: numericValue });
+    };
+
     // Simpan data produk (baru atau edit)
     const handleSave = () => {
         const dataToSend = new FormData();
         dataToSend.append('nama', formData.nama);
         dataToSend.append('deskripsi', formData.deskripsi);
-        dataToSend.append('harga', String(formData.harga));
+        dataToSend.append('harga', String(formData.harga)); // Mengirim nilai numerik ke backend
         dataToSend.append('stok', String(formData.stok));
 
         // Loop melalui array ukuran untuk menambahkannya ke FormData
@@ -180,7 +213,7 @@ export default function Index({ produks, categoriesList }: Props) {
                 },
                 onError: (errors) => {
                     console.error('Validation errors:', errors);
-                }
+                },
             });
         } else {
             // Logika untuk tambah baru
@@ -190,7 +223,7 @@ export default function Index({ produks, categoriesList }: Props) {
                 },
                 onError: (errors) => {
                     console.error('Validation errors:', errors);
-                }
+                },
             });
         }
     };
@@ -218,9 +251,7 @@ export default function Index({ produks, categoriesList }: Props) {
         const isChecked = typeof checked === 'boolean' ? checked : false;
 
         setFormData((prevData) => {
-            const newUkuran = isChecked
-                ? [...prevData.ukuran, ukuran]
-                : prevData.ukuran.filter((u) => u !== ukuran);
+            const newUkuran = isChecked ? [...prevData.ukuran, ukuran] : prevData.ukuran.filter((u) => u !== ukuran);
             return { ...prevData, ukuran: newUkuran };
         });
     };
@@ -231,8 +262,8 @@ export default function Index({ produks, categoriesList }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Produk" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4 overflow-x-auto">
-                <div className="flex justify-between items-center mb-4">
+            <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+                <div className="mb-4 flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Daftar Produk</h1>
                     <Button onClick={openAddDialog}>Tambah Produk</Button>
                 </div>
@@ -260,29 +291,19 @@ export default function Index({ produks, categoriesList }: Props) {
                                         </TableCell>
                                         <TableCell>
                                             {produk.foto && (
-                                                <img
-                                                    src={`/storage/${produk.foto}`}
-                                                    alt={produk.nama}
-                                                    className="w-16 h-16 object-cover rounded"
-                                                />
+                                                <img src={`/storage/${produk.foto}`} alt={produk.nama} className="h-16 w-16 rounded object-cover" />
                                             )}
                                         </TableCell>
                                         <TableCell>{produk.nama}</TableCell>
-                                        <TableCell>{produk.harga}</TableCell>
+                                        <TableCell>{formatRupiah(produk.harga)}</TableCell> {/* Menggunakan formatRupiah */}
                                         <TableCell>{produk.stok}</TableCell>
                                         <TableCell>{produk.ukuran ? produk.ukuran.join(', ') : ''}</TableCell>
                                         <TableCell>{produk.category ? produk.category.name : 'Tidak ada'}</TableCell>
-                                        <TableCell className="text-center space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                onClick={() => openEditDialog(produk)}
-                                            >
+                                        <TableCell className="space-x-2 text-center">
+                                            <Button variant="outline" onClick={() => openEditDialog(produk)}>
                                                 Edit
                                             </Button>
-                                            <Button
-                                                variant="destructive"
-                                                onClick={() => openDeleteDialog(produk.id)}
-                                            >
+                                            <Button variant="destructive" onClick={() => openDeleteDialog(produk.id)}>
                                                 Hapus
                                             </Button>
                                         </TableCell>
@@ -290,7 +311,7 @@ export default function Index({ produks, categoriesList }: Props) {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center py-8">
+                                    <TableCell colSpan={8} className="py-8 text-center">
                                         Tidak ada data produk yang tersedia.
                                     </TableCell>
                                 </TableRow>
@@ -305,11 +326,14 @@ export default function Index({ produks, categoriesList }: Props) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>{isEdit ? 'Edit Produk' : 'Tambah Produk'}</DialogTitle>
-                        <DialogDescription>
-                            {isEdit ? 'Ubah data produk.' : 'Tambahkan produk baru.'}
-                        </DialogDescription>
+                        <DialogDescription>{isEdit ? 'Ubah data produk.' : 'Tambahkan produk baru.'}</DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSave();
+                        }}
+                    >
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="nama" className="text-right">
@@ -337,13 +361,7 @@ export default function Index({ produks, categoriesList }: Props) {
                                 <Label htmlFor="harga" className="text-right">
                                     Harga
                                 </Label>
-                                <Input
-                                    id="harga"
-                                    type="number"
-                                    value={formData.harga}
-                                    onChange={(e) => setFormData({ ...formData, harga: parseFloat(e.target.value) })}
-                                    className="col-span-3"
-                                />
+                                <Input id="harga" type="text" value={hargaFormatted} onChange={handleHargaChange} className="col-span-3" />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="stok" className="text-right">
@@ -353,7 +371,7 @@ export default function Index({ produks, categoriesList }: Props) {
                                     id="stok"
                                     type="number"
                                     value={formData.stok}
-                                    onChange={(e) => setFormData({ ...formData, stok: parseInt(e.target.value) })}
+                                    onChange={(e) => setFormData({ ...formData, stok: parseInt(e.target.value) || 0 })}
                                     className="col-span-3"
                                 />
                             </div>
@@ -369,7 +387,7 @@ export default function Index({ produks, categoriesList }: Props) {
                                                 checked={formData.ukuran.includes(ukuran)}
                                                 onCheckedChange={(checked) => handleUkuranChange(ukuran, checked)}
                                             />
-                                            <label htmlFor={`ukuran-${ukuran}`} className="text-sm font-medium leading-none">
+                                            <label htmlFor={`ukuran-${ukuran}`} className="text-sm leading-none font-medium">
                                                 {ukuran}
                                             </label>
                                         </div>
@@ -399,17 +417,20 @@ export default function Index({ produks, categoriesList }: Props) {
                                         <SelectValue placeholder="Pilih Kategori" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categoriesList && categoriesList.map((category) => (
-                                            <SelectItem key={category.id} value={String(category.id)}>
-                                                {category.name}
-                                            </SelectItem>
-                                        ))}
+                                        {categoriesList &&
+                                            categoriesList.map((category) => (
+                                                <SelectItem key={category.id} value={String(category.id)}>
+                                                    {category.name}
+                                                </SelectItem>
+                                            ))}
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Batal</Button>
+                            <Button variant="outline" onClick={() => setIsFormOpen(false)}>
+                                Batal
+                            </Button>
                             <Button type="submit">Simpan</Button>
                         </DialogFooter>
                     </form>

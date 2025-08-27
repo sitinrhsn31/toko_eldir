@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId("produkId")->unique()->constrained('produk');
             $table->foreignId('userId')->unique()->constrained('users');
             $table->integer('jumlah');
-            $table->float('totalHarga');
             $table->timestamps();
         });
     }
