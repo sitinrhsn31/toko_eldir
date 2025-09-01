@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -73,22 +73,25 @@ interface Order {
 // Tipe data untuk objek paginasi
 interface PaginatedOrder {
     data: Order[];
-    links: {
-        first: string | null;
-        last: string | null;
-        prev: string | null;
-        next: string | null;
-    };
     meta: {
         current_page: number;
         from: number;
         last_page: number;
-        links: any[];
+        links: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
         path: string;
         per_page: number;
         to: number;
         total: number;
-    };
+    }
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
 }
 
 // Properti halaman
@@ -151,6 +154,7 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
 
     const handleSave = () => {
         const url = isEdit && currentOrderId !== null ? `/order/${currentOrderId}` : '/order';
+        console.log(url);
 
         if (isEdit) {
             form.put(url, {
@@ -186,10 +190,26 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
     };
 
     const generatePdf = () => {
-        // Mengarahkan ke rute backend dengan parameter bulan dan tahun
+        // Memastikan reportDate tidak kosong
+        if (!reportDate) {
+            // Tampilkan pesan kesalahan atau lakukan sesuatu
+            console.error("Tanggal laporan belum dipilih.");
+            return;
+        }
+        
+        // Memisahkan string 'YYYY-MM' menjadi array [YYYY, MM]
         const [year, month] = reportDate.split('-');
+        
+        // Mengarahkan ke rute backend dengan parameter bulan dan tahun
+        // Pastikan `route` helper dari Ziggy sudah terkonfigurasi dengan benar
+        // Jika tidak, gunakan URL manual
+        // const url = `/admin/order/report-monthly?month=${month}&year=${year}`;
         const url = route('admin.order.report.monthly', { month, year });
+        
+        // Membuka PDF di tab baru
         window.open(url, '_blank');
+        
+        // Menutup modal setelah mengarahkan
         setIsReportModalOpen(false);
     };
 
@@ -228,7 +248,7 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                                 orders.data.map((order, index) => (
                                     <TableRow key={order.id}>
                                         <TableCell className="font-medium">
-                                            {orders.meta ? (orders.meta.current_page - 1) * orders.meta.per_page + index + 1 : index + 1}
+                                            {order.id}
                                         </TableCell>
                                         <TableCell>{order.user ? order.user.name : 'Tidak ada'}</TableCell>
                                         <TableCell>{order.ongkir ? order.ongkir.name : 'Tidak ada'}</TableCell>
@@ -262,6 +282,26 @@ export default function Index({ orders, usersList, cartsList, ongkirsList }: Pro
                             )}
                         </TableBody>
                     </Table>
+                </div>
+
+                {/* Pagination Links */}
+                <div className="mt-8 flex justify-center space-x-2">
+                    {orders.links.map((link, index) => (
+                        <React.Fragment key={index}>
+                            {link.url === null ? (
+                                <span
+                                    className={`rounded-md border px-3 py-2 text-sm leading-4 text-gray-400`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ) : (
+                                <Link
+                                    href={link.url}
+                                    className={`rounded-md border px-3 py-2 text-sm leading-4 ${link.active ? 'bg-primary text-primary-foreground' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            )}
+                        </React.Fragment>
+                    ))}
                 </div>
             </div>
 

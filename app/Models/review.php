@@ -23,6 +23,7 @@ class Review extends Model
      */
     protected $fillable = [
         'userId',
+        'produkId',
         'rating',
         'ulasan',
     ];
@@ -40,5 +41,11 @@ class Review extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'userId');
+    }
+    
+    // Relasi ke model Produk
+    public function produk()
+    {
+        return $this->belongsTo(Produk::class, 'produkId');
     }
 }

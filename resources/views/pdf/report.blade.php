@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Pesanan Selesai</title>
+    <title>{{ config('app.name', 'Laravel') }} - Laporan Pesanan Selesai {{ $monthName }} Tahun {{ $year }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -62,23 +62,38 @@
     </div>
     <div class="divider"></div>
 
-    <h1>Laporan Pesanan Selesai Bulan {{ $month }} Tahun {{ $year }}</h1>
+    <h1>Laporan Pesanan Selesai</h1>
+    <h1>Bulan {{ $monthName }} Tahun {{ $year }}</h1> 
     <table>
         <thead>
             <tr>
                 <th>ID Pesanan</th>
-                <th>Pengguna</th>
                 <th>Tanggal</th>
+                <th>Pengguna</th>
+                <th>Barang</th>
+                <th>Jumlah</th>
                 <th>Total Harga</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($orders as $order)
+                @php
+                    // Pastikan relasi dan properti ada sebelum melakukan perhitungan
+                    $shippingCost = $order->ongkir ? $order->ongkir->harga : 0;
+                    $productPrice = ($order->transaksi && $order->transaksi->produk) ? $order->transaksi->produk->harga : 0;
+                    $productCount = 0;
+
+                    if ($order->totalHarga > $shippingCost && $productPrice > 0) {
+                        $productCount = round(($order->totalHarga - $shippingCost) / $productPrice);
+                    }
+                @endphp
                 <tr>
                     <td>#{{ $order->id }}</td>
-                    <td>{{ $order->user->name }}</td>
                     <td>{{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }}</td>
+                    <td>{{ $order->user->name }}</td>
+                    <td>{{ $order->transaksi->produk->nama ?? 'Tidak Ada' }}</td>
+                    <td>{{ $productCount }}</td>
                     <td>Rp {{ number_format($order->totalHarga, 0, ',', '.') }}</td>
                     <td>{{ ucfirst($order->status) }}</td>
                 </tr>

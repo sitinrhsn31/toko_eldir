@@ -1,8 +1,38 @@
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Head, router, useForm, Link } from '@inertiajs/react';
 import FrontLayout from '@/layouts/front-layout';
-import { Head, router } from '@inertiajs/react';
-import { ShoppingCart } from 'lucide-react';
-import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, Star } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+
+// Komponen Textarea yang dibuat sendiri
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+    ({ className, ...props }, ref) => {
+        return (
+            <textarea
+                className={`flex min-h-[80px] w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:ring-pink-400`}
+                ref={ref}
+                {...props}
+            />
+        );
+    }
+);
+
+// Tipe data untuk ulasan
+interface User {
+    id: number;
+    name: string;
+}
+
+interface Review {
+    id: number;
+    userId: number;
+    produkId: number;
+    rating: number;
+    ulasan: string;
+    user: User; // Relasi ke pengguna
+    created_at: string;
+}
 
 // Tipe data untuk produk
 interface Produk {
@@ -13,9 +43,10 @@ interface Produk {
     stok: number;
     ukuran: string[];
     foto: string;
+    reviews: Review[]; // Tambahkan properti ulasan
 }
 
-// Properti halaman, sekarang menerima objek produk
+// Properti halaman
 interface Props {
     alrLogin: boolean;
     canLogin: boolean;
@@ -26,13 +57,16 @@ interface Props {
 
 export default function ProdukDetail({ alrLogin, canLogin, canRegister, categoriesList, produk }: Props) {
     const [jumlah, setJumlah] = useState<number>(1);
-    const [ukuranDipilih, setUkuranDipilih] = useState<string | null>(null); // State baru untuk ukuran
+    const [ukuranDipilih, setUkuranDipilih] = useState<string | null>(null);
+
+    // State dan form untuk ulasan
+    const [rating, setRating] = useState(0);
+    const [ulasan, setUlasan] = useState('');
 
     const handleAddToCart = () => {
-        // PERBAIKAN: Periksa apakah pengguna sudah login
-        if (alrLogin) {
+        if (!alrLogin) {
             alert('Anda harus login untuk menambahkan produk ke keranjang.');
-            router.get(route('login')); // Arahkan ke halaman login
+            router.get(route('login'));
             return;
         }
 
@@ -41,19 +75,17 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
             return;
         }
 
-        // PERBAIKAN: Periksa apakah ukuran sudah dipilih
         if (!ukuranDipilih) {
             alert('Mohon pilih ukuran produk terlebih dahulu.');
             return;
         }
 
-        // Kirim request POST ke controller
         router.post(
             '/front/keranjang/add',
             {
                 produkId: produk.id,
                 jumlah: jumlah,
-                ukuran: ukuranDipilih, // Kirim data ukuran yang dipilih
+                ukuran: ukuranDipilih,
             },
             {
                 onSuccess: () => {
@@ -77,7 +109,7 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
             </FrontLayout>
         );
     }
-
+    
     return (
         <FrontLayout>
             <Head title={produk?.nama || 'Detail Produk'} />
@@ -145,6 +177,40 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
                                 Tambahkan ke Keranjang
                             </Button>
                         </div>
+                    </div>
+                </div>
+
+                {/* Bagian Ulasan */}
+                <div className="mt-8 border-t pt-8  ">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ulasan Produk</h2>
+                    
+                    {/* Daftar ulasan yang sudah ada */}
+                    <div className="mt-8 space-y-8">
+                        {produk?.reviews && produk.reviews.length > 0 ? (
+                            produk.reviews.map((review) => (
+                                <div key={review.id} className="border-b pb-8">
+                                    <div className="flex items-center space-x-4">
+                                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                            {review.user.name}
+                                        </h4>
+                                        <div className="flex space-x-1">
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <Star
+                                                    key={star}
+                                                    className={`h-4 w-4 ${star <= review.rating ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="mt-2 text-gray-600 dark:text-gray-400">{review.ulasan}</p>
+                                    <p className="mt-1 text-sm text-gray-500">
+                                        {new Date(review.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-gray-500 dark:text-gray-400">Belum ada ulasan untuk produk ini.</p>
+                        )}
                     </div>
                 </div>
             </div>

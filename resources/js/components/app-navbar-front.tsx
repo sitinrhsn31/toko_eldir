@@ -45,21 +45,6 @@ export default function MyNavbar({ auth, canLogin, canRegister }: Props) {
                         >
                             Produk
                         </Link>
-
-                        {/* Dropdown Kategori dengan gaya tombol */}
-                        {/* <Select onValueChange={(value) => (window.location.href = value)}>
-                            <SelectTrigger className="inline-flex items-center gap-1 rounded-lg border-0 bg-white px-4 py-2 text-sm font-semibold text-pink-500 transition-colors hover:bg-gray-100">
-                                <SelectValue placeholder="Kategori" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white text-gray-800">
-                                {categoriesList.map((category) => (
-                                    <SelectItem key={category.id} value={route('front.kategori', { categoryId: category.id })}>
-                                        {category.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select> */}
-
                         <Link
                             href={route('front.tentang-kami')}
                             className="inline-flex items-center text-sm font-medium underline-offset-4 hover:underline"
@@ -91,7 +76,7 @@ export default function MyNavbar({ auth, canLogin, canRegister }: Props) {
                                     </DropdownMenuItem>
                                     {auth.user.role === 'admin' && (
                                         <DropdownMenuItem asChild>
-                                            <Link href={route('dashboard')}>Dashboard Admin</Link>
+                                            <Link href={route('dashboard.index')}>Dashboard Admin</Link>
                                         </DropdownMenuItem>
                                     )}
                                     <DropdownMenuSeparator />

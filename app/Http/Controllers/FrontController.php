@@ -16,7 +16,7 @@ use Midtrans\Config;
 use Midtrans\Notification;
 use Midtrans\Snap;
 use Dompdf\Dompdf;
-
+use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 
 class FrontController extends Controller
@@ -27,6 +27,14 @@ class FrontController extends Controller
 
         // Mengambil 4 produk paling baru dari database
         $produksTerbaru = Produk::latest()->take(4)->get();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
 
         return Inertia::render('welcome', [
             'alrLogin' => $alrLogin,
@@ -34,6 +42,7 @@ class FrontController extends Controller
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'produksTerbaru' => $produksTerbaru,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -57,6 +66,14 @@ class FrontController extends Controller
 
         // Ambil semua kategori untuk Select
         $categoriesList = Category::all();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
 
         return Inertia::render('produk', [
             'alrLogin' => $alrLogin,
@@ -64,17 +81,31 @@ class FrontController extends Controller
             'canRegister' => Route::has('register'),
             'produks' => $produks,
             'categoriesList' => $categoriesList, // Kirim categoriesList ke view
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
     public function produkdetail(Produk $produk)
     {
-        $alrLogin = !Auth::check();
+        $alrLogin = Auth::check();
+
+        // Memuat relasi 'category' dan 'reviews.user'
+        $produk->load(['category', 'reviews.user']);
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
+        
         return Inertia::render('produkdetail', [
             'alrLogin' => $alrLogin,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
-            'produk' => $produk->load('category'), // Gunakan load() untuk memuat relasi
+            'produk' => $produk,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -113,10 +144,20 @@ class FrontController extends Controller
     public function tentangkami()
     {
         $alrLogin = !Auth::check();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
+
         return Inertia::render('tentang-kami', [
             'alrLogin' => $alrLogin,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -132,6 +173,14 @@ class FrontController extends Controller
         $totalHarga = $cart->sum(function ($item) {
             return $item->produk->harga * $item->jumlah;
         });
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
 
         return Inertia::render('cart', [
             'alrLogin' => $alrLogin,
@@ -139,6 +188,7 @@ class FrontController extends Controller
             'canRegister' => Route::has('register'),
             'cartItems' => $cart,
             'totalHarga' => $totalHarga,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -200,12 +250,22 @@ class FrontController extends Controller
         $cart = Cart::where('userId', Auth::id())->with('produk')->get();
         $ongkir = Ongkir::all();
         $alrLogin = !Auth::check();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
+
         return Inertia::render('checkout', [
             'alrLogin' => $alrLogin,
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'cart' => $cart,
-            'ongkir' => $ongkir
+            'ongkir' => $ongkir,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -233,6 +293,20 @@ class FrontController extends Controller
         DB::beginTransaction();
 
         try {
+
+            foreach ($request->items as $item) {
+                $produk = Produk::lockForUpdate()->find($item['id_produk']);
+
+                // Pastikan produk ada dan stok cukup
+                if (!$produk || $produk->stok < $item['jumlah']) {
+                    throw new \Exception('Stok untuk produk ' . $produk->nama_produk . ' tidak mencukupi.');
+                }
+                
+                // Kurangi stok produk
+                $produk->stok -= $item['jumlah'];
+                $produk->save();
+            }
+
             // 1. Buat order baru
             $order = Order::create([
                 'userId' => $user->id,
@@ -338,39 +412,49 @@ class FrontController extends Controller
         $originalOrderId = substr($orderId, strlen('ORDER-'));
         $order = Order::where('id', $originalOrderId)->first();
 
+        // Pastikan pesanan ditemukan sebelum melanjutkan, untuk menghindari error
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
 
-        // 5. Logika untuk mengubah status transaksi
-        if ($transaction == 'capture') {
-            // Untuk pembayaran dengan kartu kredit
-            if ($fraud == 'challenge') {
-                // Status penipuan (fraud), ubah status order menjadi 'challenge'
-                $order->status = 'challenge';
-            } else if ($fraud == 'accept') {
-                // Pembayaran berhasil, ubah status order menjadi 'success'
-                $order->status = 'paid';
-            }
-        } else if ($transaction == 'settlement') {
-            // Pembayaran berhasil (selain kartu kredit), ubah status order menjadi 'paid'
-            $order->status = 'paid';
-        } else if ($transaction == 'pending') {
-            // Transaksi sedang menunggu pembayaran
-            $order->status = 'pending';
-        } else if ($transaction == 'deny') {
-            // Transaksi ditolak
-            $order->status = 'denied';
-        } else if ($transaction == 'expire') {
-            // Transaksi kadaluarsa
-            $order->status = 'expired';
-        } else if ($transaction == 'cancel') {
-            // Transaksi dibatalkan
-            $order->status = 'cancelled';
+        // Cari transaksi terkait
+        $transaksi = Transaksi::where('orderId', $order->id)->first();
+        if (!$transaksi) {
+            return response()->json(['message' => 'Transaksi not found'], 404);
         }
 
-        // 6. Simpan perubahan status
+        // 5. Logika untuk mengubah status transaksi di kedua tabel
+        switch ($transaction) {
+            case 'capture':
+            case 'settlement':
+                if ($fraud == 'challenge') {
+                    // Jika butuh verifikasi (fraud challenge)
+                    $order->status = 'proses';
+                    $transaksi->status = 'bayar';
+                } else {
+                    // Pembayaran berhasil
+                    $order->status = 'proses';
+                    $transaksi->status = 'bayar';
+                }
+                break;
+            case 'pending':
+                // Transaksi sedang menunggu pembayaran
+                $order->status = 'belum';
+                $transaksi->status = 'belum';
+                break;
+            case 'deny':
+            case 'expire':
+            case 'cancel':
+                // Transaksi gagal, kadaluarsa, atau dibatalkan
+                // Untuk transaksi, status 'tolak' lebih tepat
+                $order->status = 'selesai'; // atau 'batal' jika ada
+                $transaksi->status = 'tolak';
+                break;
+        }
+
+        // 6. Simpan perubahan status di kedua tabel
         $order->save();
+        $transaksi->save();
 
         return response()->json(['message' => 'Status updated successfully']);
     }
@@ -381,12 +465,21 @@ class FrontController extends Controller
         $transaksis = Transaksi::where('userId', Auth::id())
             ->with(['order', 'ongkir'])
             ->get();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
 
         return Inertia::render('transaksi', [
             'alrLogin' => !Auth::check(),
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'transaksis' => $transaksis,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
@@ -397,41 +490,81 @@ class FrontController extends Controller
             ->with('ongkir') // Jika Anda ingin menampilkan nama jasa kirim
             ->latest()
             ->get();
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
 
         return Inertia::render('pesanan', [
             'alrLogin' => !Auth::check(),
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'orders' => $orders,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
+        ]);
+    }
+
+    public function pesanandetail(Order $order)
+    {
+        // Memastikan hanya pengguna yang memiliki pesanan yang dapat melihatnya
+        if ($order->userId !== Auth::id()) {
+            abort(403);
+        }
+
+        // Memuat relasi 'transaksi' dan di dalamnya memuat relasi 'produk'
+        // Memuat relasi 'review' dan di dalamnya memuat relasi 'produk'
+        $order->load(['transaksi.produk']);
+    
+        // Inisialisasi cartCount
+        $cartCount = 0;
+
+        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
+        if (Auth::check()) {
+            $cartCount = Cart::where('userId', Auth::id())->count();
+        }
+
+        return Inertia::render('pesanandetail', [   
+            'alrLogin' => Auth::check(),
+            'order' => $order,
+            'cartCount' => $cartCount, // Kirim cartCount ke frontend
         ]);
     }
 
     public function printMonthlyReport(Request $request)
     {
-        // Validasi input bulan dan tahun
         $request->validate([
-            'month' => 'required|integer|between:1,12',
+            'month' => 'required|numeric|between:1,12',
             'year' => 'required|integer|digits:4',
         ]);
 
         $month = $request->input('month');
         $year = $request->input('year');
 
-        // Mendapatkan pesanan yang sudah selesai dalam periode yang dipilih
+        // Mendapatkan pesanan yang sudah selesai
         $orders = Order::where('status', 'selesai')
             ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
-            ->with(['user', 'ongkir'])
+            ->with(['user', 'transaksi', 'ongkir'])
             ->get();
 
-        $html = view('pdf.report', compact('orders', 'month', 'year'))->render();
+        if ($orders->isEmpty()) {
+            return response()->json(['message' => 'Tidak ada data pesanan selesai pada bulan dan tahun yang dipilih.'], 404);
+        }
+
+        // Mengubah angka bulan menjadi nama bulan
+        $monthName = \Carbon\Carbon::createFromDate($year, $month, 1)->locale('id')->monthName;
+
+        $html = view('pdf.report', compact('orders', 'monthName', 'year'))->render();
 
         $dompdf = new Dompdf();
         $dompdf->loadHtml($html);
-
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $dompdf->stream('Laporan_Pesanan_Selesai_' . $year . '-' . $month . '.pdf', ['Attachment' => false]);
+        $dompdf->stream('Laporan_Pesanan_Selesai_' . $monthName . '_' . $year . '.pdf', ['Attachment' => false]);
     }
 }

@@ -83,4 +83,6 @@ class Order extends Model
     {
         return $this->hasOne(Transaksi::class, 'orderId');
     }
+
+    
 }

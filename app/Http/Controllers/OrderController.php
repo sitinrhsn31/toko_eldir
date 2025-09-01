@@ -16,7 +16,9 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $orders = Order::with(['user', 'cart', 'ongkir'])->paginate(10);
+        $query = Order::query()->with(['user', 'ongkir']);
+        $orders = $query->paginate(10);
+        // $orders = Order::with(['user', 'ongkir'])->latest()->get();
         $usersList = User::all(['id', 'name']);
         $ongkirsList = Ongkir::all(['id', 'name']);
 
@@ -57,7 +59,7 @@ class OrderController extends Controller
             'userId' => 'required|exists:users,id',
             'ongkirId' => 'required|exists:ongkir,id',
             'name' => 'required|string|max:255',
-            'nohp' => 'required|integer',
+            'nohp' => 'required|numeric',
             'alamat' => 'required|string',
             'totalHarga' => 'required|numeric',
             'status' => 'required|in:belum,proses,kirim,selesai',
@@ -65,8 +67,16 @@ class OrderController extends Controller
 
         $order->update($validatedData);
 
+        // Logika baru: Jika status pesanan menjadi 'selesai'
+        if ($order->status === 'selesai') {
+            return redirect()->route('order.index')->with([
+                'order_status' => 'selesai',
+                'success' => 'Pesanan selesai. Anda sekarang dapat memberikan ulasan!'
+            ]);
+        }
+
         return redirect()->route('order.index')
-                         ->with('success', 'Order berhasil diperbarui.');
+            ->with('success', 'Order berhasil diperbarui.');
     }
 
     /**

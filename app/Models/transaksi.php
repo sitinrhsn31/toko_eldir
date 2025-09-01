@@ -62,6 +62,15 @@ class Transaksi extends Model
     }
 
     /**
+     * Mendefinisikan relasi dengan model Produk.
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function produk()
+    {
+        return $this->belongsTo(Produk::class, 'produkId');
+    }
+
+    /**
      * Mendefinisikan relasi dengan model Ongkir.
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */

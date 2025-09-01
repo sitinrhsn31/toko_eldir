@@ -1,3 +1,4 @@
+// app-header-front.tsx
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Input } from '@/components/ui/input';
@@ -11,12 +12,13 @@ interface Props {
             id: number;
             name: string;
             email: string;
-            role: string; // Tambahkan role jika diperlukan
+            role: string;
         } | null;
     };
+    cartCount: number; // Tambahkan properti cartCount
 }
 
-export default function AppHeader({ auth }: Props) {
+export default function AppHeader({ auth, cartCount }: Props) { // Terima cartCount sebagai prop
     return (
         <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -48,11 +50,15 @@ export default function AppHeader({ auth }: Props) {
                     {/* Keranjang */}
                     <div className="flex items-center sm:ml-6">
                         {auth.user ? (
-                            <Link href={route('front.keranjang')} className="ml-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+                            <Link href={route('front.keranjang')} className="relative ml-4 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
                                 <ShoppingCart className="h-6 w-6" />
+                                {cartCount > 0 && ( // Tampilkan notifikasi hanya jika cartCount > 0
+                                    <span className="absolute -top-2 -right-2 flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-xs font-bold text-white">
+                                        {cartCount}
+                                    </span>
+                                )}
                             </Link>
-                        ) : null }
-                        
+                        ) : null}
                     </div>
                 </div>
             </div>

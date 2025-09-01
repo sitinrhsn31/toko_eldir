@@ -55,4 +55,28 @@ class Produk extends Model
     {
         return $this->belongsTo(Category::class, 'categoryId');
     }
+
+    /**
+     * Mendefinisikan relasi dengan model Cart.
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function cart()
+    {
+        return $this->hasMany(Cart::class, 'produkId');
+    }
+
+    /**
+     * Mendefinisikan relasi dengan model Transaksi.
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function transaksi()
+    {
+        return $this->hasMany(Transaksi::class, 'produkId');
+    }
+    
+    // Relasi baru untuk ulasan
+    public function reviews()
+    {
+        return $this->hasMany(Review::class, 'produkId');
+    }
 }
