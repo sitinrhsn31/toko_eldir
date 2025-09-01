@@ -1,5 +1,6 @@
 // app-header-front.tsx
-import React from 'react';
+import { useState, FormEvent } from 'react';
+import { router } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +19,20 @@ interface Props {
     cartCount: number; // Tambahkan properti cartCount
 }
 
-export default function AppHeader({ auth, cartCount }: Props) { // Terima cartCount sebagai prop
+export default function AppHeader({ auth, cartCount }: Props) {
+    const [searchTerm, setSearchTerm] = useState<string>('');
+
+    const handleSearch = (event: FormEvent) => {
+        event.preventDefault();
+        if (searchTerm.trim() !== '') {
+            // Gunakan router.get untuk navigasi dan mengirim query parameter
+            router.get('/front/produk', { search: searchTerm }, {
+                preserveState: true,
+                preserveScroll: true,
+            });
+        }
+    };
+
     return (
         <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -31,19 +45,23 @@ export default function AppHeader({ auth, cartCount }: Props) { // Terima cartCo
                     {/* Search Bar */}
                     <div className="flex-1 flex justify-center px-2">
                         <div className="max-w-lg w-full lg:max-w-xs">
-                            <Label htmlFor="search" className="sr-only">Cari Barang Apa</Label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                            <form onSubmit={handleSearch}>
+                                <Label htmlFor="search" className="sr-only">Cari Barang Apa</Label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                    </div>
+                                    <Input
+                                        id="search"
+                                        name="search"
+                                        className="block w-full pl-10 pr-3 py-2 border-transparent rounded-full leading-5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:bg-white dark:focus:bg-gray-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 sm:text-sm transition-all"
+                                        placeholder="Cari Produk Disini..."
+                                        type="search"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
                                 </div>
-                                <Input
-                                    id="search"
-                                    name="search"
-                                    className="block w-full pl-10 pr-3 py-2 border-transparent rounded-full leading-5 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:bg-white dark:focus:bg-gray-700 focus:border-pink-500 focus:ring-1 focus:ring-pink-500 sm:text-sm transition-all"
-                                    placeholder="Cari Barang Apa"
-                                    type="search"
-                                />
-                            </div>
+                            </form>
                         </div>
                     </div>
 

@@ -81,8 +81,6 @@ class Order extends Model
      */
     public function transaksi()
     {
-        return $this->hasOne(Transaksi::class, 'orderId');
+        return $this->hasMany(Transaksi::class, 'orderId');
     }
-
-    
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -41,22 +41,25 @@ interface Category {
 // Tipe data untuk objek paginasi
 interface PaginatedCategories {
     data: Category[];
-    links: {
-        first: string | null;
-        last: string | null;
-        prev: string | null;
-        next: string | null;
-    };
     meta: {
         current_page: number;
         from: number;
         last_page: number;
-        links: any[]; // Links to other pages
+        links: Array<{
+            url: string | null;
+            label: string;
+            active: boolean;
+        }>;
         path: string;
         per_page: number;
         to: number;
         total: number;
     };
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
 }
 
 // Properti halaman
@@ -190,6 +193,26 @@ export default function Index({ categories }: Props) {
                             )}
                         </TableBody>
                     </Table>
+                </div>
+
+                {/* Pagination Links */}
+                <div className="mt-8 flex justify-center space-x-2">
+                    {categories.links.map((link, index) => (
+                        <React.Fragment key={index}>
+                            {link.url === null ? (
+                                <span
+                                    className={`rounded-md border px-3 py-2 text-sm leading-4 text-gray-400`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ) : (
+                                <Link   
+                                    href={link.url}
+                                    className={`rounded-md border px-3 py-2 text-sm leading-4 ${link.active ? 'bg-primary text-primary-foreground' : 'bg-white text-gray-700 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            )}
+                        </React.Fragment>
+                    ))}
                 </div>
             </div>
 

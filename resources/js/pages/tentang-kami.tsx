@@ -30,9 +30,11 @@ export default function TentangKami({
                     </p> */}
                     <h3 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Hubungi Kami</h3>
                     <p className="text-sm text-gray-900 dark:text-white">
-                        Email: support@eldir.com
+                        Email: elldirelladira@gmail.com
                         <br />
-                        Telepon: +62 123 4567 890
+                        Telepon: +6283124139350
+                        <br />
+                        Alamat Offline: Jl. Kyai H. Usman Dhomiri No.85, Padasuka, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40526
                     </p>
                 </div>
             </div>

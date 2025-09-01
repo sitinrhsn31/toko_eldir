@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreignId("orderId")->constrained('order');
             $table->foreignId("produkId")->constrained('produk');
             $table->foreignId("ongkirId")->constrained('ongkir');
+            $table->integer('jumlah');
+            $table->float('harga');
             $table->enum("status", ["belum", "bayar", "tolak"])->default("belum");
             $table->string("code");
             $table->timestamps();

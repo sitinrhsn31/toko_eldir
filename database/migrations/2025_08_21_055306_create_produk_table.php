@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId("categoryId")->constrained('category');
             $table->string("nama");
-            $table->string("deskripsi");
+            $table->text("deskripsi");
             $table->float("harga");
             $table->integer("stok");
             $table->json("ukuran");

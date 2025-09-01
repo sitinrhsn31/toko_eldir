@@ -47,6 +47,7 @@ class ReviewController extends Controller
      */
     public function store(Request $request, Order $order)
     {
+        dd($request->all());
         // 1. Validasi input dari frontend
         $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],

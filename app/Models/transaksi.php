@@ -25,6 +25,8 @@ class Transaksi extends Model
         'orderId',
         'produkId',
         'ongkirId',
+        'jumlah',
+        'harga',
         'status',
         'code',
     ];

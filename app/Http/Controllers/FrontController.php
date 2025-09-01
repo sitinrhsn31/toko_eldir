@@ -289,12 +289,13 @@ class FrontController extends Controller
         // Mengambil data user yang sedang login
         $user = Auth::user();
 
-        // Mulai transaksi database
+        // Mulai transaksi database untuk memastikan semua operasi berhasil atau gagal bersamaan
         DB::beginTransaction();
 
         try {
-
+            // Cek stok dan kurangi stok produk di awal
             foreach ($request->items as $item) {
+                // Mengunci baris produk untuk menghindari race condition
                 $produk = Produk::lockForUpdate()->find($item['id_produk']);
 
                 // Pastikan produk ada dan stok cukup
@@ -324,10 +325,13 @@ class FrontController extends Controller
             Config::$isSanitized = true;
             Config::$is3ds = true;
 
+            // Generate order ID yang lebih unik untuk Midtrans
+            $midtransOrderId = 'ORDER-' . $order->id . '-' . uniqid();
+
             // Siapkan detail transaksi untuk Midtrans
             $midtransParams = [
                 'transaction_details' => [
-                    'order_id' => 'ORDER-' . $order->id,
+                    'order_id' => $midtransOrderId,
                     'gross_amount' => $request->total_bayar,
                 ],
                 'customer_details' => [
@@ -340,6 +344,7 @@ class FrontController extends Controller
                         'id' => $item['id_produk'],
                         'price' => $item['harga'],
                         'quantity' => $item['jumlah'],
+                        // Anda mungkin perlu mengambil nama produk dari database jika tidak dikirim dari front-end
                         'name' => 'Produk',
                     ];
                 }, $request->items),
@@ -354,36 +359,41 @@ class FrontController extends Controller
             ];
 
             $snapToken = Snap::getSnapToken($midtransParams);
+            
+            // 3. Buat entri transaksi baru untuk setiap produk
+            foreach ($request->items as $item) {
+                Transaksi::create([
+                    'userId' => $user->id,
+                    'orderId' => $order->id,
+                    'produkId' => $item['id_produk'],
+                    'jumlah' => $item['jumlah'],
+                    'harga' => $item['harga'],
+                    'ongkirId' => $order->ongkirId,
+                    'status' => 'belum',
+                    'code' => $snapToken,
+                ]);
+            }
 
-            // 3. Buat entri transaksi baru
-            Transaksi::create([
-                'userId' => $user->id,
-                'orderId' => $order->id,
-                'produkId' => $request->items[0]['id_produk'],
-                'ongkirId' => $order->ongkirId,
-                'status' => 'belum',
-                'code' => $snapToken,
-            ]);
-
-            // 4. Hapus item dari keranjang
+            // 4. Hapus item dari keranjang setelah berhasil
             Cart::where('userId', $user->id)->delete();
 
             // Commit transaksi database
             DB::commit();
 
-            // 5. Kirim snap token kembali ke front-end
-            // return Inertia::location(route('front.transaksi', ['order_id' => $order->id]));
+            // 5. Kirim snap token dan order ID kembali ke front-end
             return response()->json([
                 'snapToken' => $snapToken,
-                'orderId' => $order->id, // Kirim order ID juga jika diperlukan di front-end
+                'orderId' => $order->id,
             ]);
+
         } catch (\Exception $e) {
             // Rollback transaksi jika ada kesalahan
             DB::rollBack();
-
-            dd($e);
-            // Tangani kesalahan Midtrans dengan mengembalikan respons Inertia
-            return back()->with('error', $e->getMessage());
+            
+            // Tangani kesalahan dengan mengembalikan respons yang jelas
+            return response()->json([
+                'error' => 'Midtrans API is returning API error. HTTP status code: 400 API response: ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -515,10 +525,9 @@ class FrontController extends Controller
             abort(403);
         }
 
-        // Memuat relasi 'transaksi' dan di dalamnya memuat relasi 'produk'
-        // Memuat relasi 'review' dan di dalamnya memuat relasi 'produk'
-        $order->load(['transaksi.produk']);
-    
+        // Memuat relasi 'transaksi' dengan relasi 'produk' dan 'reviews' di dalamnya
+        $order->load(['transaksi.produk.reviews']);
+        
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -527,10 +536,10 @@ class FrontController extends Controller
             $cartCount = Cart::where('userId', Auth::id())->count();
         }
 
-        return Inertia::render('pesanandetail', [   
+        return Inertia::render('pesanandetail', [
             'alrLogin' => Auth::check(),
             'order' => $order,
-            'cartCount' => $cartCount, // Kirim cartCount ke frontend
+            'cartCount' => $cartCount,
         ]);
     }
 
