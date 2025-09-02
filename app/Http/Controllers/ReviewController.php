@@ -47,7 +47,6 @@ class ReviewController extends Controller
      */
     public function store(Request $request, Order $order)
     {
-        dd($request->all());
         // 1. Validasi input dari frontend
         $request->validate([
             'rating' => ['required', 'integer', 'min:1', 'max:5'],
@@ -78,7 +77,7 @@ class ReviewController extends Controller
         if (Review::where('userId', Auth::id())->where('produkId', $request->produkId)->exists()) {
             return response()->json(['message' => 'Anda sudah memberikan ulasan untuk produk ini.'], 409);
         }
-        
+
         // 6. Menyimpan ulasan ke database
         try {
             Review::create([
@@ -90,7 +89,6 @@ class ReviewController extends Controller
             ]);
 
             return inertia::location(route('front.pesanan.detail', ['order' => $order->id]));
-
         } catch (\Exception $e) {
             return response()->json(['message' => 'Gagal menyimpan ulasan: ' . $e->getMessage()], 500);
         }
@@ -128,7 +126,7 @@ class ReviewController extends Controller
         $review->update($validatedData);
 
         return redirect()->route('review.index')
-                         ->with('success', 'Ulasan berhasil diperbarui.');
+            ->with('success', 'Ulasan berhasil diperbarui.');
     }
 
     /**
@@ -139,6 +137,6 @@ class ReviewController extends Controller
         $review->delete();
 
         return redirect()->route('review.index')
-                         ->with('success', 'Ulasan berhasil dihapus.');
+            ->with('success', 'Ulasan berhasil dihapus.');
     }
 }

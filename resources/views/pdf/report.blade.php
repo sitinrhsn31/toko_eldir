@@ -43,6 +43,7 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            vertical-align: top; /* Perbaikan: untuk rata atas pada rowspan */
         }
         th {
             background-color: #f2f2f2;
@@ -63,44 +64,55 @@
     <div class="divider"></div>
 
     <h1>Laporan Pesanan Selesai</h1>
-    <h1>Bulan {{ $monthName }} Tahun {{ $year }}</h1> 
+    <h1>Bulan {{ $monthName }} Tahun {{ $year }}</h1>
     <table>
         <thead>
             <tr>
                 <th>ID Pesanan</th>
                 <th>Tanggal</th>
                 <th>Pengguna</th>
-                <th>Barang</th>
+                <th>Nama Produk</th>
                 <th>Jumlah</th>
-                <th>Total Harga</th>
+                <th>Harga Satuan</th>
+                <th>Total Harga Produk</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
             @foreach ($orders as $order)
                 @php
-                    // Pastikan relasi dan properti ada sebelum melakukan perhitungan
-                    $shippingCost = $order->ongkir ? $order->ongkir->harga : 0;
-                    $productPrice = ($order->transaksi && $order->transaksi->produk) ? $order->transaksi->produk->harga : 0;
-                    $productCount = 0;
-
-                    if ($order->totalHarga > $shippingCost && $productPrice > 0) {
-                        $productCount = round(($order->totalHarga - $shippingCost) / $productPrice);
-                    }
+                    $isFirstTransaction = true;
+                    $transaksiCount = count($order->transaksi);
                 @endphp
-                <tr>
-                    <td>#{{ $order->id }}</td>
-                    <td>{{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }}</td>
-                    <td>{{ $order->user->name }}</td>
-                    <td>{{ $order->transaksi->produk->nama ?? 'Tidak Ada' }}</td>
-                    <td>{{ $productCount }}</td>
+                @foreach ($order->transaksi as $transaksi)
+                    <tr>
+                        @if ($isFirstTransaction)
+                            <td rowspan="{{ $transaksiCount + 2 }}">#{{ $order->id }}</td>
+                            <td rowspan="{{ $transaksiCount + 2 }}">{{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y') }}</td>
+                            <td rowspan="{{ $transaksiCount + 2 }}">{{ $order->user->name }}</td>
+                        @endif
+                        <td>{{ $transaksi->produk->nama ?? 'N/A' }}</td>
+                        <td>{{ $transaksi->jumlah }}</td>
+                        <td>Rp {{ number_format($transaksi->produk->harga ?? 0, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format(($transaksi->jumlah ?? 0) * ($transaksi->produk->harga ?? 0), 0, ',', '.') }}</td>
+                        @if ($isFirstTransaction)
+                            <td rowspan="{{ $transaksiCount + 2 }}">{{ ucfirst($order->status) }}</td>
+                            @php $isFirstTransaction = false; @endphp
+                        @endif
+                    </tr>
+                @endforeach
+                <tr style="background-color: #f9f9f9;">
+                    <td colspan="3" style="text-align: right; font-weight: bold;">Biaya Pengiriman</td>
+                    <td>Rp {{ number_format($order->ongkir->biaya ?? 0, 0, ',', '.') }}</td>
+                </tr>
+                <tr style="background-color: #f2f2f2;">
+                    <td colspan="3" style="text-align: right; font-weight: bold;">Total Keseluruhan Pesanan</td>
                     <td>Rp {{ number_format($order->totalHarga, 0, ',', '.') }}</td>
-                    <td>{{ ucfirst($order->status) }}</td>
                 </tr>
             @endforeach
-            <tr>
-                <td colspan="3" class="total">Total Pendapatan</td>
-                <td colspan="2">Rp {{ number_format($orders->sum('totalHarga'), 0, ',', '.') }}</td>
+            <tr style="background-color: #e6e6e6;">
+                <td colspan="7" class="total">Total Pendapatan Bulan Ini</td>
+                <td>Rp {{ number_format($orders->sum('totalHarga'), 0, ',', '.') }}</td>
             </tr>
         </tbody>
     </table>

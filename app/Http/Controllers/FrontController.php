@@ -27,7 +27,7 @@ class FrontController extends Controller
 
         // Mengambil 4 produk paling baru dari database
         $produksTerbaru = Produk::latest()->take(4)->get();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -66,7 +66,7 @@ class FrontController extends Controller
 
         // Ambil semua kategori untuk Select
         $categoriesList = Category::all();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -91,7 +91,7 @@ class FrontController extends Controller
 
         // Memuat relasi 'category' dan 'reviews.user'
         $produk->load(['category', 'reviews.user']);
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -99,7 +99,7 @@ class FrontController extends Controller
         if (Auth::check()) {
             $cartCount = Cart::where('userId', Auth::id())->count();
         }
-        
+
         return Inertia::render('produkdetail', [
             'alrLogin' => $alrLogin,
             'canLogin' => Route::has('login'),
@@ -144,7 +144,7 @@ class FrontController extends Controller
     public function tentangkami()
     {
         $alrLogin = !Auth::check();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -173,7 +173,7 @@ class FrontController extends Controller
         $totalHarga = $cart->sum(function ($item) {
             return $item->produk->harga * $item->jumlah;
         });
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -250,7 +250,7 @@ class FrontController extends Controller
         $cart = Cart::where('userId', Auth::id())->with('produk')->get();
         $ongkir = Ongkir::all();
         $alrLogin = !Auth::check();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -302,7 +302,7 @@ class FrontController extends Controller
                 if (!$produk || $produk->stok < $item['jumlah']) {
                     throw new \Exception('Stok untuk produk ' . $produk->nama_produk . ' tidak mencukupi.');
                 }
-                
+
                 // Kurangi stok produk
                 $produk->stok -= $item['jumlah'];
                 $produk->save();
@@ -359,7 +359,7 @@ class FrontController extends Controller
             ];
 
             $snapToken = Snap::getSnapToken($midtransParams);
-            
+
             // 3. Buat entri transaksi baru untuk setiap produk
             foreach ($request->items as $item) {
                 Transaksi::create([
@@ -385,11 +385,10 @@ class FrontController extends Controller
                 'snapToken' => $snapToken,
                 'orderId' => $order->id,
             ]);
-
         } catch (\Exception $e) {
             // Rollback transaksi jika ada kesalahan
             DB::rollBack();
-            
+
             // Tangani kesalahan dengan mengembalikan respons yang jelas
             return response()->json([
                 'error' => 'Midtrans API is returning API error. HTTP status code: 400 API response: ' . $e->getMessage()
@@ -475,7 +474,7 @@ class FrontController extends Controller
         $transaksis = Transaksi::where('userId', Auth::id())
             ->with(['order', 'ongkir'])
             ->get();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -500,7 +499,7 @@ class FrontController extends Controller
             ->with('ongkir') // Jika Anda ingin menampilkan nama jasa kirim
             ->latest()
             ->get();
-    
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -527,7 +526,7 @@ class FrontController extends Controller
 
         // Memuat relasi 'transaksi' dengan relasi 'produk' dan 'reviews' di dalamnya
         $order->load(['transaksi.produk.reviews']);
-        
+
         // Inisialisasi cartCount
         $cartCount = 0;
 
@@ -557,7 +556,7 @@ class FrontController extends Controller
         $orders = Order::where('status', 'selesai')
             ->whereYear('created_at', $year)
             ->whereMonth('created_at', $month)
-            ->with(['user', 'transaksi', 'ongkir'])
+            ->with(['user', 'transaksi', 'produk', 'ongkir'])
             ->get();
 
         if ($orders->isEmpty()) {

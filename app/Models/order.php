@@ -83,4 +83,22 @@ class Order extends Model
     {
         return $this->hasMany(Transaksi::class, 'orderId');
     }
+
+
+
+    /**
+     * Mendefinisikan relasi dengan model Produk melalui Transaksi.
+     * @return \Illuminate\Database\Eloquent\Relations\HasManyThrough
+     */
+    public function produk()
+    {
+        return $this->hasManyThrough(
+            Produk::class,
+            Transaksi::class,
+            'orderId', // Foreign key on the Transaksi table...
+            'id',      // Foreign key on the Produk table...
+            'id',      // Local key on the Order table...
+            'produkId' // Local key on the Transaksi table...
+        );
+    }
 }
