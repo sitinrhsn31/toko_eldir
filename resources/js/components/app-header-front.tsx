@@ -46,7 +46,7 @@ export default function AppHeader({ auth, cartCount }: Props) {
                     <div className="flex-1 flex justify-center px-2">
                         <div className="max-w-lg w-full lg:max-w-xs">
                             <form onSubmit={handleSearch}>
-                                <Label htmlFor="search" className="sr-only">Cari Barang Apa</Label>
+                                <Label htmlFor="search" className="sr-only">Neangan Naon?</Label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />

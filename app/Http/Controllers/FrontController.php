@@ -52,18 +52,24 @@ class FrontController extends Controller
     {
         $alrLogin = !Auth::check();
 
-        // Mengambil parameter categoryId dari URL
+        // Mengambil parameter categoryId dan search dari URL
         $categoryId = $request->query('categoryId');
+        $search = $request->query('search'); // Tambahkan baris ini untuk mengambil parameter 'search'
 
         // Inisialisasi query builder
         $query = Produk::query();
 
-        // Jika parameter categoryId ada, tambahkan filter ke query
+        // Jika parameter categoryId ada, tambahkan filter
         if ($categoryId) {
             $query->where('categoryId', $categoryId);
         }
 
-        // Ambil data produk dengan paginasi (10 data per halaman)
+        // Tambahkan filter untuk pencarian jika ada parameter 'search'
+        if ($search) {
+            $query->where('nama', 'like', '%' . $search . '%');
+        }
+
+        // Ambil data produk dengan paginasi
         $produks = $query->paginate(10);
 
         // Ambil semua kategori untuk Select
@@ -82,8 +88,8 @@ class FrontController extends Controller
             'canLogin' => Route::has('login'),
             'canRegister' => Route::has('register'),
             'produks' => $produks,
-            'categoriesList' => $categoriesList, // Kirim categoriesList ke view
-            'cartCount' => $cartCount, // Kirim cartCount ke frontend
+            'categoriesList' => $categoriesList,
+            'cartCount' => $cartCount,
         ]);
     }
 

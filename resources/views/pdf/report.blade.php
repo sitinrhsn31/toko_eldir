@@ -57,9 +57,9 @@
 </head>
 <body>
     <div class="header">
-        <h2>ELDIRSHOP</h2>
-        <p>Jl. Contoh No. 123, Kota Contoh, Kode Pos 12345</p>
-        <p>Telepon: (021) 1234567 | Email: info@eldirshop.com</p>
+        <h2>Toko Eldir.Id</h2>
+        <p>Jl. Kyai H. Usman Dhomiri No. 85, Padasuka, Kec. Cimahi Tengah, Kota Cimahi, Jawa Barat 40526</p>
+        <p>Telepon: +6283124139350 | Email: info@eldirshop.com</p>
     </div>
     <div class="divider"></div>
 
