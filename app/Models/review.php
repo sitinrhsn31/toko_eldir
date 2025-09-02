@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Review extends Model
 {
@@ -47,5 +48,11 @@ class Review extends Model
     public function produk()
     {
         return $this->belongsTo(Produk::class, 'produkId');
+    }
+
+    // Tambahkan relasi 'transaksi'
+    public function transaksi(): BelongsTo
+    {
+        return $this->belongsTo(Transaksi::class, 'transaksiId');
     }
 }

@@ -1,4 +1,3 @@
-// front-layout.tsx
 import React, { useState, useEffect } from 'react';
 import AppFooter from '@/components/app-footer-front';
 import AppHeader from '@/components/app-header-front';
@@ -47,7 +46,7 @@ export default function FrontLayout({ children }: PropsWithChildren) {
     }, [flash]);
 
     return (
-        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex min-h-screen flex-col bg-gray-100 dark:bg-gray-900">
             <div className="fixed top-0 left-0 z-20 w-full">
                 <AppHeader auth={auth} cartCount={cartCount} /> {/* Kirim cartCount sebagai prop */}
                 <AppNavbar canLogin={canLogin} canRegister={canRegister} categoriesList={categoriesList} auth={auth} />
@@ -65,7 +64,7 @@ export default function FrontLayout({ children }: PropsWithChildren) {
                 </div>
             )}
 
-            <main className="relative isolate pt-[124px]">{children}</main>
+            <main className="relative isolate flex-grow pt-[124px]">{children}</main>
 
             <AppFooter />
         </div>

@@ -17,7 +17,7 @@ class TransaksiController extends Controller
     public function index()
     {
         // Ambil data transaksi dengan relasi user, order, dan ongkir
-        $transaksis = Transaksi::with(['user', 'order', 'ongkir'])->paginate(10);
+        $transaksis = Transaksi::with(['user', 'order', 'produk', 'ongkir'])->paginate(10);
 
         // Ambil data untuk dropdown di form
         $usersList = User::all(['id', 'name']);

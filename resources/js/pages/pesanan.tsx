@@ -43,7 +43,7 @@ export default function PesananPage() {
     return (
         <FrontLayout>
             <Head title="Pesanan Saya" />
-            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <h1 className="mb-8 text-3xl font-bold text-gray-900 dark:text-white">Pesanan Saya</h1>
 
                 {orders && orders.length > 0 ? (

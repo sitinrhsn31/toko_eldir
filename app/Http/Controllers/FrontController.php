@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Ongkir;
 use App\Models\Order;
 use App\Models\Produk;
+use App\Models\Review;
 use App\Models\Transaksi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -17,6 +18,7 @@ use Midtrans\Notification;
 use Midtrans\Snap;
 use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 class FrontController extends Controller
@@ -417,53 +419,55 @@ class FrontController extends Controller
         $fraud = $notif->fraud_status;
 
         // 4. Periksa apakah order ID valid
-        // Hapus prefix 'ORDER-' saat mencari order
         $originalOrderId = substr($orderId, strlen('ORDER-'));
         $order = Order::where('id', $originalOrderId)->first();
 
-        // Pastikan pesanan ditemukan sebelum melanjutkan, untuk menghindari error
         if (!$order) {
             return response()->json(['message' => 'Order not found'], 404);
         }
 
-        // Cari transaksi terkait
-        $transaksi = Transaksi::where('orderId', $order->id)->first();
-        if (!$transaksi) {
+        // Cari semua transaksi terkait
+        $transaksis = Transaksi::where('orderId', $order->id)->get();
+        if ($transaksis->isEmpty()) {
             return response()->json(['message' => 'Transaksi not found'], 404);
-        }
+        }   
 
-        // 5. Logika untuk mengubah status transaksi di kedua tabel
+        // 5. Logika untuk mengubah status order dan transaksi
+        $statusOrderBaru = $order->status; // Default status
+        $statusTransaksiBaru = '';
+
         switch ($transaction) {
             case 'capture':
             case 'settlement':
                 if ($fraud == 'challenge') {
-                    // Jika butuh verifikasi (fraud challenge)
-                    $order->status = 'proses';
-                    $transaksi->status = 'bayar';
+                    $statusOrderBaru = 'proses';
+                    $statusTransaksiBaru = 'bayar';
                 } else {
-                    // Pembayaran berhasil
-                    $order->status = 'proses';
-                    $transaksi->status = 'bayar';
+                    $statusOrderBaru = 'proses';
+                    $statusTransaksiBaru = 'bayar';
                 }
                 break;
             case 'pending':
-                // Transaksi sedang menunggu pembayaran
-                $order->status = 'belum';
-                $transaksi->status = 'belum';
+                $statusOrderBaru = 'belum';
+                $statusTransaksiBaru = 'belum';
                 break;
             case 'deny':
             case 'expire':
             case 'cancel':
-                // Transaksi gagal, kadaluarsa, atau dibatalkan
-                // Untuk transaksi, status 'tolak' lebih tepat
-                $order->status = 'selesai'; // atau 'batal' jika ada
-                $transaksi->status = 'tolak';
+                $statusOrderBaru = 'selesai';
+                $statusTransaksiBaru = 'tolak';
                 break;
         }
 
         // 6. Simpan perubahan status di kedua tabel
+        $order->status = $statusOrderBaru;
         $order->save();
-        $transaksi->save();
+
+        // Loop melalui setiap transaksi dan perbarui statusnya
+        foreach ($transaksis as $transaksi) {
+            $transaksi->status = $statusTransaksiBaru;
+            $transaksi->save();
+        }
 
         return response()->json(['message' => 'Status updated successfully']);
     }
@@ -517,29 +521,72 @@ class FrontController extends Controller
         ]);
     }
 
-    public function pesanandetail(Order $order)
+    /**
+     * Tampilkan detail pesanan.
+     */
+    public function pesananDetail(Order $order)
     {
-        // Memastikan hanya pengguna yang memiliki pesanan yang dapat melihatnya
+        // Pastikan hanya pengguna yang memiliki pesanan yang dapat melihatnya
         if ($order->userId !== Auth::id()) {
             abort(403);
         }
 
-        // Memuat relasi 'transaksi' dengan relasi 'produk' dan 'reviews' di dalamnya
-        $order->load(['transaksi.produk.reviews']);
+        // Muat relasi transaksi dengan produk dan ulasan yang spesifik untuk setiap transaksi
+        $order->load([
+            'transaksi' => function ($query) {
+                $query->with(['produk', 'review']);
+            },
+            'user',
+            'ongkir'
+        ]);
 
-        // Inisialisasi cartCount
-        $cartCount = 0;
-
-        // Periksa apakah pengguna sedang login untuk mengambil jumlah keranjang
-        if (Auth::check()) {
-            $cartCount = Cart::where('userId', Auth::id())->count();
-        }
+        $cartCount = Auth::check() ? Cart::where('userId', Auth::id())->count() : 0;
 
         return Inertia::render('pesanandetail', [
             'alrLogin' => Auth::check(),
             'order' => $order,
             'cartCount' => $cartCount,
         ]);
+    }
+
+    /**
+     * Simpan ulasan baru untuk sebuah transaksi.
+     */
+    public function storeReview(Request $request, Transaksi $transaksi)
+    {
+        // Pastikan pengguna yang sedang login adalah pemilik transaksi ini
+        if ($transaksi->userId !== Auth::id()) {
+            abort(403);
+        }
+
+        // Pastikan order terkait sudah selesai
+        if ($transaksi->order->status !== 'selesai') {
+            abort(403, 'Anda hanya dapat memberikan ulasan pada pesanan yang sudah selesai.');
+        }
+
+        // Validasi data input
+        $validated = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+            'ulasan' => 'nullable|string|max:1000',
+        ]);
+
+        // Cek apakah ulasan untuk transaksi ini sudah ada
+        if ($transaksi->review) {
+            throw ValidationException::withMessages([
+                'ulasan' => 'Anda sudah memberikan ulasan untuk item ini pada pesanan ini.'
+            ]);
+        }
+
+        // Simpan ulasan baru dengan menghubungkannya ke transaksi
+        $review = new Review();
+        $review->userId = Auth::id();
+        $review->produkId = $transaksi->produkId;
+        $review->transaksiId = $transaksi->id;
+        $review->rating = $validated['rating'];
+        $review->ulasan = $validated['ulasan'];
+        $review->save();
+
+        return response()->json(['message' => 'Ulasan berhasil dikirim!'], 201);
     }
 
     public function printMonthlyReport(Request $request)

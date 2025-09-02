@@ -117,7 +117,7 @@ export default function Welcome({ canLogin, canRegister, produksTerbaru, categor
     return (
         <FrontLayout>
             <Head title="Welcome" />
-            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Hero Section */}
                 <HeroSection />
 
@@ -128,6 +128,12 @@ export default function Welcome({ canLogin, canRegister, produksTerbaru, categor
                         {produksTerbaru.map((produk) => (
                             <ProductCard key={produk.id} produk={produk} />
                         ))}
+                    </div>
+                    {/* Tombol "Lihat Semua Produk" yang baru */}
+                    <div className="mt-8 text-center">
+                        <Link href="/front/produk">
+                            <Button className="w-auto px-8 py-3 text-lg">Lihat Semua Produk</Button>
+                        </Link>
                     </div>
                 </div>
             </div>

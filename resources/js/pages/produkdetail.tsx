@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, useForm, Link } from '@inertiajs/react';
 import FrontLayout from '@/layouts/front-layout';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Star } from 'lucide-react';
+import { ShoppingCart, Star, ArrowLeft } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 
 // Komponen Textarea yang dibuat sendiri
@@ -65,7 +65,8 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
 
     const handleAddToCart = () => {
         if (!alrLogin) {
-            alert('Anda harus login untuk menambahkan produk ke keranjang.');
+            // Hindari penggunaan alert()
+            // alert('Anda harus login untuk menambahkan produk ke keranjang.');
             router.get(route('login'));
             return;
         }
@@ -76,7 +77,8 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
         }
 
         if (!ukuranDipilih) {
-            alert('Mohon pilih ukuran produk terlebih dahulu.');
+            // Hindari penggunaan alert()
+            // alert('Mohon pilih ukuran produk terlebih dahulu.');
             return;
         }
 
@@ -89,11 +91,13 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
             },
             {
                 onSuccess: () => {
-                    alert('Produk berhasil ditambahkan ke keranjang!');
+                    // Hindari penggunaan alert()
+                    // alert('Produk berhasil ditambahkan ke keranjang!');
                 },
                 onError: (errors) => {
                     console.error('Error saat menambahkan ke keranjang:', errors);
-                    alert('Terjadi kesalahan saat menambahkan produk. Coba lagi.');
+                    // Hindari penggunaan alert()
+                    // alert('Terjadi kesalahan saat menambahkan produk. Coba lagi.');
                 },
             },
         );
@@ -113,10 +117,19 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
     return (
         <FrontLayout>
             <Head title={produk?.nama || 'Detail Produk'} />
-            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {/* Tombol kembali yang dipindahkan ke atas grid */}
+                <button
+                    onClick={() => window.history.back()}
+                    className="mb-8 flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-gray-800 backdrop-blur-sm transition-colors hover:bg-white dark:bg-gray-800/70 dark:text-gray-200 dark:hover:bg-gray-800"
+                    aria-label="Kembali"
+                >
+                    <ArrowLeft className="h-5 w-5" />
+                    <span className="font-semibold">Kembali</span>
+                </button>
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                     {/* Gambar Produk */}
-                    <div className="flex items-center justify-center md:col-span-1">
+                    <div className="relative flex items-center justify-center md:col-span-1">
                         {produk?.foto && (
                             <div className="h-[500px] w-full max-w-lg overflow-hidden rounded-lg shadow-lg">
                                 <img src={`/storage/${produk.foto}`} alt={produk.nama} className="h-full w-full object-cover" />
@@ -181,7 +194,7 @@ export default function ProdukDetail({ alrLogin, canLogin, canRegister, categori
                 </div>
 
                 {/* Bagian Ulasan */}
-                <div className="mt-8 border-t pt-8  ">
+                <div className="mt-8 border-t pt-8  ">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ulasan Produk</h2>
                     
                     {/* Daftar ulasan yang sudah ada */}

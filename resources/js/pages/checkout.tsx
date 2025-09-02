@@ -138,12 +138,12 @@ export default function CheckoutPage() {
                         console.log('Payment success:', result);
                         toast.success('Pembayaran berhasil!');
                         // Redirect ke halaman sukses menggunakan Inertia
-                        window.location.href = `/front/transaksi`;
+                        window.location.href = `/front/pesanan`;
                     },
                     onPending: (result: any) => {
                         console.log('Payment pending:', result);
                         toast('Menunggu pembayaran...'); // Menggunakan toast()
-                        window.location.href = `/front/transaksi`;
+                        window.location.href = `/front/pesanan`;
                     },
                     onError: (result: any) => {
                         console.error('Payment failed:', result);

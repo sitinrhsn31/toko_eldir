@@ -63,8 +63,8 @@ export default function ProdukPage({ canLogin, canRegister, produks, categoriesL
     return (
         <FrontLayout>
             <Head title="Produk" />
-            <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-                <div className="mt-8">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="mt-0">
                     <div className="mb-8 flex items-center justify-between">
                         <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Semua Produk</h2>
 

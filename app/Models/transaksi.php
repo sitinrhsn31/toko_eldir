@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Transaksi extends Model
 {
@@ -79,5 +80,11 @@ class Transaksi extends Model
     public function ongkir()
     {
         return $this->belongsTo(Ongkir::class, 'ongkirId');
+    }
+
+    // Tambahkan relasi 'review'
+    public function review(): HasOne
+    {
+        return $this->hasOne(Review::class, 'transaksiId');
     }
 }

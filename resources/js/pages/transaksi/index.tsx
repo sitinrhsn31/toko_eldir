@@ -50,6 +50,11 @@ interface Order {
     name: string;
 }
 
+interface Produk {
+    id: number;
+    nama: string;
+}
+
 interface Ongkir {
     id: number;
     name: string;
@@ -60,11 +65,13 @@ interface Transaksi {
     id: number;
     userId: number;
     orderId: number;
+    produkId: number;
     ongkirId: number;
     status: string;
     code: string;
     user: User;
     order: Order;
+    produk: Produk;
     ongkir: Ongkir;
 }
 
@@ -189,6 +196,7 @@ export default function Index({ transaksis, usersList, ordersList, ongkirsList }
                                 <TableHead className="w-[80px]">No.</TableHead>
                                 <TableHead>Pengguna</TableHead>
                                 <TableHead>Order</TableHead>
+                                <TableHead>Produk</TableHead>
                                 <TableHead>Ongkir</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Kode</TableHead>
@@ -204,6 +212,7 @@ export default function Index({ transaksis, usersList, ordersList, ongkirsList }
                                         </TableCell>
                                         <TableCell>{transaksi.user ? transaksi.user.name : 'Tidak ada'}</TableCell>
                                         <TableCell>{transaksi.order ? transaksi.order.id : 'Tidak ada'}</TableCell>
+                                        <TableCell>{transaksi.produk ? transaksi.produk.nama : 'Tidak ada'}</TableCell>
                                         <TableCell>{transaksi.ongkir ? transaksi.ongkir.name : 'Tidak ada'}</TableCell>
                                         <TableCell>{transaksi.status}</TableCell>
                                         <TableCell>{transaksi.code}</TableCell>

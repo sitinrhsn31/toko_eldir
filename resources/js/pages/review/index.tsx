@@ -45,13 +45,21 @@ interface User {
     name: string;
 }
 
+interface Produk {
+    id: number;
+    nama: string;
+}
+
 // Tipe data untuk ulasan
 interface Review {
     id: number;
     userId: number;
+    produkId: number;
     rating: number;
     ulasan: string;
     user: User;
+    produk: Produk;
+    created_at: string;
 }
 
 // Tipe data untuk objek paginasi
@@ -168,6 +176,7 @@ export default function Index({ reviews, usersList }: Props) {
                             <TableRow>
                                 <TableHead className="w-[80px]">No.</TableHead>
                                 <TableHead>Pengguna</TableHead>
+                                <TableHead>Produk</TableHead>
                                 <TableHead>Rating</TableHead>
                                 <TableHead>Ulasan</TableHead>
                                 <TableHead className="text-center">Aksi</TableHead>
@@ -181,15 +190,16 @@ export default function Index({ reviews, usersList }: Props) {
                                             {reviews.meta ? (reviews.meta.current_page - 1) * reviews.meta.per_page + index + 1 : index + 1}
                                         </TableCell>
                                         <TableCell>{review.user ? review.user.name : 'Tidak ada'}</TableCell>
+                                        <TableCell>{review.produk ? review.produk.nama : 'Tidak ada'}</TableCell>
                                         <TableCell>{review.rating}</TableCell>
                                         <TableCell>{review.ulasan}</TableCell>
                                         <TableCell className="text-center space-x-2">
-                                            <Button
+                                            {/* <Button
                                                 variant="outline"
                                                 onClick={() => openEditDialog(review)}
                                             >
                                                 Edit
-                                            </Button>
+                                            </Button> */}
                                             <Button
                                                 variant="destructive"
                                                 onClick={() => openDeleteDialog(review.id)}

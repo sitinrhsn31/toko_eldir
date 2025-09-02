@@ -1,5 +1,7 @@
 import FrontLayout from '@/layouts/front-layout';
 import React, { useEffect, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { ArrowLeft } from 'lucide-react';
 
 // Custom Textarea component for styling consistency
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => {
@@ -35,10 +37,11 @@ interface User {
     name: string;
 }
 
-// Review data interface
+// Review data interface - updated
 interface Review {
     id: number;
     userId: number;
+    transaksiId: number; // Tambahkan ini
     produkId: number;
     rating: number;
     ulasan: string;
@@ -46,7 +49,7 @@ interface Review {
     created_at: string;
 }
 
-// Product data interface - updated to include reviews
+// Product data interface
 interface Produk {
     id: number;
     nama: string;
@@ -55,22 +58,25 @@ interface Produk {
     stok?: number;
     ukuran?: string[];
     foto?: string;
-    reviews?: Review[];
 }
 
-// Transaction data interface - updated to include produk with reviews
+// Transaction data interface - updated to include optional review
 interface Transaksi {
     id: number;
+    userId: number; // Add this
+    orderId: number; // Add this
     user: User;
     produk: Produk;
+    review?: Review; // Review is now a single object
     jumlah: number;
     harga: number;
 }
 
-// Order data interface - Updated to handle reviews as an array
+// Order data interface
 interface Order {
     id: number;
     name: string;
+    nohp: string; // Tambahkan nohp di sini
     alamat: string;
     totalHarga: number;
     status: string;
@@ -79,12 +85,13 @@ interface Order {
     ongkir?: {
         biaya: number;
     };
-    userId: number; // Menambahkan userId untuk mencocokkan struktur data Anda
+    userId: number;
 }
 
 interface Props {
     alrLogin: boolean;
     order: Order;
+    cartCount: number;
 }
 
 const getXsrfToken = () => {
@@ -98,11 +105,10 @@ const getXsrfToken = () => {
     return '';
 };
 
-export default function PesananDetail({ alrLogin, order }: Props) {
+export default function PesananDetail({ order }: Props) {
     const [globalError, setGlobalError] = useState<string | null>(null);
     const [globalSuccessMessage, setGlobalSuccessMessage] = useState<string | null>(null);
 
-    // Perbaikan utama: Tambahkan pengecekan di awal untuk memastikan order tidak undefined.
     if (!order) {
         return (
             <div className="min-h-screen bg-gray-50 py-16 font-sans antialiased dark:bg-gray-900">
@@ -116,29 +122,25 @@ export default function PesananDetail({ alrLogin, order }: Props) {
 
     const shippingCost = order.ongkir?.biaya || 0;
 
-    // Perbaikan utama: pastikan data transaksi adalah array sebelum di-map.
     const transactions = Array.isArray(order.transaksi) ? order.transaksi : [];
 
     // Sub-komponen untuk ulasan, diletakkan di dalam komponen utama agar lebih mudah diatur
     const ReviewComponent = ({ transaksi, orderStatus, userId }: { transaksi: Transaksi; orderStatus: string; userId: number }) => {
-        const [rating, setRating] = useState(0);
-        const [ulasan, setUlasan] = useState('');
+        const [rating, setRating] = useState(transaksi.review?.rating || 0);
+        const [ulasan, setUlasan] = useState(transaksi.review?.ulasan || '');
         const [isSubmitting, setIsSubmitting] = useState(false);
-        const [userReview, setUserReview] = useState<Review | null>(null);
-        const [hasReviewed, setHasReviewed] = useState(false);
+        const [hasReviewed, setHasReviewed] = useState(!!transaksi.review);
         const [error, setError] = useState<string | null>(null);
         const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-        // Memeriksa apakah ulasan sudah ada saat komponen dimuat
+        // Reset state saat transaksi berubah (untuk multi-produk)
         useEffect(() => {
-            if (Array.isArray(transaksi.produk.reviews)) {
-                const existingReview = transaksi.produk.reviews.find((r) => r.userId === userId);
-                if (existingReview) {
-                    setUserReview(existingReview);
-                    setHasReviewed(true);
-                }
-            }
-        }, [transaksi.produk.reviews, userId]);
+            setRating(transaksi.review?.rating || 0);
+            setUlasan(transaksi.review?.ulasan || '');
+            setHasReviewed(!!transaksi.review);
+            setError(null);
+            setSuccessMessage(null);
+        }, [transaksi]);
 
         const handleReviewSubmit = async (e: React.FormEvent) => {
             e.preventDefault();
@@ -160,37 +162,29 @@ export default function PesananDetail({ alrLogin, order }: Props) {
             }
 
             try {
-                // Menggunakan fetch untuk simulasi pengiriman data ke server
-                const response = await fetch(`/pesanan/${transaksi.id}/ulasan`, {
+                const response = await fetch(`/front/transaksi/${transaksi.id}/ulasan`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-XSRF-TOKEN': xsrfToken, // Perbaikan: Menggunakan header yang benar
+                        'X-XSRF-TOKEN': xsrfToken,
                     },
                     body: JSON.stringify({
                         rating,
                         ulasan,
-                        produkId: transaksi.produk.id,
                     }),
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Gagal mengirim ulasan');
+                    throw new Error(data.message || 'Gagal mengirim ulasan');
                 }
 
-                // Mengupdate state secara lokal untuk mensimulasikan reload
-                const newReview = {
-                    id: Math.random(),
-                    userId,
-                    produkId: transaksi.produk.id,
-                    rating,
-                    ulasan,
-                    user: { id: userId, name: 'Anda' },
-                    created_at: new Date().toISOString(),
-                };
-                setUserReview(newReview);
                 setHasReviewed(true);
                 setSuccessMessage('Ulasan berhasil dikirim!');
+                router.reload({
+                    only: ['order'],
+                });
             } catch (err) {
                 setError('Terjadi kesalahan saat mengirim ulasan. Coba lagi.');
                 console.error('Error saat mengirim ulasan:', err);
@@ -207,7 +201,10 @@ export default function PesananDetail({ alrLogin, order }: Props) {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="mt-4 rounded-lg bg-green-100 p-4 text-sm text-green-700 dark:bg-green-800 dark:text-green-300" role="alert">
+                    <div
+                        className="mt-4 rounded-lg bg-green-100 p-4 text-sm text-green-700 dark:bg-green-800 dark:text-green-300"
+                        role="alert"
+                    >
                         {successMessage}
                     </div>
                 )}
@@ -222,11 +219,11 @@ export default function PesananDetail({ alrLogin, order }: Props) {
                             ))}
                         </div>
                         <div className="mt-4">
-                            <label htmlFor={`ulasan-${transaksi.produk.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label htmlFor={`ulasan-${transaksi.id}`} className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Tulis Ulasan
                             </label>
                             <Textarea
-                                id={`ulasan-${transaksi.produk.id}`}
+                                id={`ulasan-${transaksi.id}`}
                                 className="mt-1 w-full"
                                 rows={4}
                                 value={ulasan}
@@ -249,10 +246,10 @@ export default function PesananDetail({ alrLogin, order }: Props) {
                         <h3 className="text-lg font-semibold">Ulasan Anda</h3>
                         <div className="mt-2 flex space-x-1">
                             {[1, 2, 3, 4, 5].map((star) => (
-                                <StarIcon key={star} fill={star <= (userReview?.rating || 0)} />
+                                <StarIcon key={star} fill={star <= (transaksi.review?.rating || 0)} />
                             ))}
                         </div>
-                        <p className="mt-2 text-gray-600 dark:text-gray-400">{userReview?.ulasan}</p>
+                        <p className="mt-2 text-gray-600 dark:text-gray-400">{transaksi.review?.ulasan}</p>
                     </div>
                 ) : (
                     <div className="mt-8 rounded-md bg-gray-100 p-4 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
@@ -265,9 +262,18 @@ export default function PesananDetail({ alrLogin, order }: Props) {
 
     return (
         <FrontLayout>
-            <div className="min-h-screen bg-gray-50 py-16 font-sans antialiased dark:bg-gray-900">
-                <title>Detail Pesanan</title>
+            <Head title={'Detail Pesanan'} />
+            <div className="min-h-screen bg-gray-50 font-sans antialiased dark:bg-gray-900">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    {/* Tombol kembali yang dipindahkan ke atas judul */}
+                    <button
+                        onClick={() => window.history.back()}
+                        className="mb-8 flex items-center gap-2 rounded-full bg-white/70 px-4 py-2 text-gray-800 backdrop-blur-sm transition-colors hover:bg-white dark:bg-gray-800/70 dark:text-gray-200 dark:hover:bg-gray-800"
+                        aria-label="Kembali"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="font-semibold">Kembali</span>
+                    </button>
                     <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Detail Pesanan #{order.id}</h1>
                     <p className="mt-2 text-gray-600 dark:text-gray-400">
                         Status: <span className="font-semibold">{order.status}</span>
@@ -278,13 +284,13 @@ export default function PesananDetail({ alrLogin, order }: Props) {
                         <div className="rounded-lg border border-gray-200 p-6 shadow-sm dark:border-gray-700">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Informasi Pengiriman</h3>
                             <p className="mt-2 text-gray-600 dark:text-gray-400">Nama: {order.name}</p>
+                            <p className="mt-1 text-gray-600 dark:text-gray-400">No. Telp: {order.nohp}</p>
                             <p className="mt-1 text-gray-600 dark:text-gray-400">Alamat: {order.alamat}</p>
                         </div>
 
                         <div className="rounded-lg border border-gray-200 p-6 shadow-sm dark:border-gray-700">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ringkasan Pesanan</h3>
                             <div className="mt-2 space-y-2">
-                                {/* Gunakan variabel 'transactions' untuk memastikan data adalah array */}
                                 {transactions.map((transaksi: Transaksi) => (
                                     <div key={transaksi.id} className="flex justify-between text-gray-600 dark:text-gray-400">
                                         <span>
@@ -310,7 +316,6 @@ export default function PesananDetail({ alrLogin, order }: Props) {
                     {/* Review Section */}
                     <div className="mt-12 border-t border-gray-200 pt-12 dark:border-gray-700">
                         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Ulasan Produk</h2>
-
                         {globalError && (
                             <div className="mt-4 rounded-lg bg-red-100 p-4 text-sm text-red-700 dark:bg-red-800 dark:text-red-300" role="alert">
                                 {globalError}

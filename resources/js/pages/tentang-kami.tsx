@@ -29,7 +29,7 @@ export default function TentangKami({
                         Terima kasih telah memilih ELDIR sebagai mitra gaya Anda.
                     </p> */}
                     <h3 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">Hubungi Kami</h3>
-                    <p className="text-sm text-gray-900 dark:text-white">
+                    <p className="mb-20 text-sm text-gray-900 dark:text-white">
                         Email: elldirelladira@gmail.com
                         <br />
                         Telepon: +6283124139350

@@ -18,7 +18,7 @@ class ReviewController extends Controller
     public function index()
     {
         // Ambil data ulasan dengan relasi user
-        $reviews = Review::with('user')->paginate(10);
+        $reviews = Review::with('user', 'produk')->paginate(10);
 
         // Ambil data untuk dropdown di form
         $usersList = User::all(['id', 'name']);
@@ -85,7 +85,6 @@ class ReviewController extends Controller
                 'produkId' => $request->produkId,
                 'rating' => $request->rating,
                 'ulasan' => $request->ulasan,
-                // Mengubah 'orderId' menjadi 'produkId' di sini
             ]);
 
             return inertia::location(route('front.pesanan.detail', ['order' => $order->id]));

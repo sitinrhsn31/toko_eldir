@@ -27,4 +27,6 @@ Route::group(['prefix' => 'front', 'as' => 'front.'], function () {
     Route::get('/pesanan', [FrontController::class, 'pesanan'])->name('pesanan');
 
     Route::get('/pesanan/{order}', [FrontController::class, 'pesanandetail'])->name('pesanan.detail');
+
+    Route::post('/transaksi/{transaksi}/ulasan', [FrontController::class, 'storeReview'])->name('transaksi.ulasan.store');
 });
