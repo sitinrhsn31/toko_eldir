@@ -16,9 +16,10 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $query = Order::query()->with(['user', 'ongkir']);
+        // Memperbarui eager loading untuk memuat transaksi dan produk terkait
+        $query = Order::query()->with(['user', 'ongkir', 'transaksi.produk']);
         $orders = $query->paginate(10);
-        // $orders = Order::with(['user', 'ongkir'])->latest()->get();
+
         $usersList = User::all(['id', 'name']);
         $ongkirsList = Ongkir::all(['id', 'name']);
 
@@ -47,7 +48,7 @@ class OrderController extends Controller
         Order::create($validatedData);
 
         return redirect()->route('order.index')
-                         ->with('success', 'Order berhasil ditambahkan.');
+            ->with('success', 'Order berhasil ditambahkan.');
     }
 
     /**
@@ -87,6 +88,6 @@ class OrderController extends Controller
         $order->delete();
 
         return redirect()->route('order.index')
-                         ->with('success', 'Order berhasil dihapus.');
+            ->with('success', 'Order berhasil dihapus.');
     }
 }
